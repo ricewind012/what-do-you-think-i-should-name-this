@@ -1,0 +1,7 @@
+Language: Cpp
+Standard: Latest
+BasedOnStyle: Mozilla
+
+UseTab: Always
+IndentWidth: 2
+TabWidth: 2

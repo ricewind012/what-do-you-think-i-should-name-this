@@ -1,0 +1,125 @@
+.player-section {
+	padding: var(--spacing);
+
+	overflow: hidden;
+	flex-direction: column;
+	flex-grow: 1;
+
+	&:not([hidden]) {
+		display: flex;
+	}
+}
+
+#player-list {
+	background-color: var(--bg);
+
+	overflow: hidden scroll;
+}
+
+.list-artist {
+	flex-shrink: 0;
+
+	&::after {
+		content: ' -- ';
+
+		color: var(--fg-2);
+	}
+}
+
+.list-time {
+	text-align: right;
+
+	flex: 1 0 auto;
+}
+
+#player-section-main {
+	width: 100%;
+
+	display: flex;
+}
+
+#player-header {
+	gap: calc(var(--spacing) / 2);
+
+	display: flex;
+	align-items: center;
+}
+
+#player-song-album {
+	/* for ms gothic */
+	max-height: calc(var(--font-size) + 1px);
+
+	&:empty::before {
+		content: "<no album>";
+	}
+}
+
+#player-song-year:not(:empty) {
+	&::before {
+		content: "(";
+	}
+
+	&::after {
+		content: ")";
+	}
+}
+
+#player-song-artist-and-title {
+	/* the text will not be that large anyway */
+	white-space: normal;
+
+	flex-grow: 1;
+}
+
+#player-song-artist {
+	&:not(:empty)::after {
+		content: " - ";
+	}
+}
+
+#player-controls {
+	text-align: right;
+	margin: calc(var(--spacing) / 2) 0;
+}
+
+#player-album-art {
+	width: var(--size);
+	height: var(--size);
+
+	/* empty image */
+	&[src="data:image/gif;base64,R0lGODlhAQABADs7Ozs="] {
+		background-image: linear-gradient(130deg, transparent, var(--bg-2));
+	}
+}
+
+#player-album-art-container {
+	--size: 140px;
+	position: relative;
+	min-width: var(--size);
+	max-width: var(--size);
+	height: var(--size);
+
+	display: flex;
+
+	cursor: pointer;
+
+	&::before {
+		content: '';
+
+		position: absolute;
+		width: var(--size);
+		height: 100%;
+		left: calc(var(--size) * -1);
+
+		background-image: linear-gradient(90deg, transparent, var(--bg-2));
+		/* emulate a radial-gradient(?) */
+		mask: linear-gradient(to bottom, transparent 0%, black 100%);
+
+		transition: var(--animation-time);
+		pointer-events: none;
+	}
+
+	&:not(:hover)::before {
+		opacity: 0;
+	}
+}

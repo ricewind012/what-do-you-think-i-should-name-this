@@ -1,0 +1,22 @@
+#!/bin/sh -e
+
+export HOME=${XDG_CACHE_HOME:=$HOME/.cache}/electron-gyp
+modules_dir=src/modules
+root=$PWD
+
+while IFS='": ' read -r _ k _ _ v _; do
+	[ "$k" != electron ] && continue
+
+	version=${v#^}
+done < package.json
+
+for i in ${1:-"$root/$modules_dir/"*}; do
+	i=${i##*/}
+
+	[ "$i" = shared ] && continue
+
+	cd "$root/$modules_dir/$i"
+	node-gyp rebuild \
+		--target="$version" \
+		--dist-url=https://electronjs.org/headers
+done

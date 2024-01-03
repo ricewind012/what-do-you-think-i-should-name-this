@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta
+			http-equiv="Content-Security-Policy"
+			content="default-src 'unsafe-inline' file: data:"
+		/>
+
+		<meta
+			name="color-scheme"
+			content="light dark"
+		/>
+		<link
+			rel="stylesheet"
+			href="shared.css"
+		/>
+		<link
+			rel="stylesheet"
+			href="player.css"
+		/>
+	</head>
+
+	<body id="player">
+		<ul
+			id="player-list"
+			class="player-section"
+			hidden
+		></ul>
+
+		<div id="player-section-main">
+			<main class="player-section">
+				<header id="player-header">
+					<h1
+						id="player-song-album"
+						class="text-ellipsis"
+					>
+						Not playing (yet)
+					</h1>
+					<span id="player-song-year"></span>
+				</header>
+
+				<hr orientation="vertical" />
+
+				<section
+					id="player-song-artist-and-title"
+					class="text-ellipsis"
+				>
+					<span id="player-song-artist"></span>
+					<span id="player-song-title"></span>
+				</section>
+
+				<section id="player-controls">
+					<button
+						id="player-previous"
+						title="Previous"
+					>
+						
+					</button>
+					<button
+						id="player-toggle"
+						title="Play/pause"
+					>
+						<span
+							id="player-toggle-pause"
+							hidden
+							></span
+						>
+						<span id="player-toggle-play"></span>
+					</button>
+					<button
+						id="player-next"
+						title="Next"
+					>
+						
+					</button>
+				</section>
+
+				<progress
+					id="player-progress"
+					max="1"
+					value="0"
+					title="Seek"
+				></progress>
+			</main>
+
+			<picture id="player-album-art-container">
+				<img
+					id="player-album-art"
+					src="data:image/gif;base64,R0lGODlhAQABADs7Ozs="
+				/>
+			</picture>
+		</div>
+	</body>
+
+	<template id="player-list-entry">
+		<li class="list-entry">
+			<span class="list-artist"></span>
+			<span class="list-title text-ellipsis"></span>
+			<span class="list-time"></span>
+		</li>
+	</template>
+
+	<script src="shared.js"></script>
+	<script src="player.js"></script>
+</html>
