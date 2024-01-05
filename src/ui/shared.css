@@ -2,10 +2,18 @@
 	box-sizing: border-box;
 }
 
+@property --input-angle {
+	syntax: "<angle>";
+	inherits: false;
+	initial-value: 155deg;
+}
+
 :root {
 	--main-color: white;
+
 	--bg: color-mix(in srgb, var(--main-color) 25%, transparent);
 	--bg-2: color-mix(in srgb, var(--main-color) 50%, transparent);
+
 	--fg: var(--main-color);
 	--fg-2: color-mix(in srgb, var(--main-color) 75%, transparent);
 
@@ -25,20 +33,22 @@
 :root {
 	font: var(--font-size) var(--font-name);
 	color: var(--main-color);
+
 	height: 100%;
 }
 
 body {
 	background-color: var(--bg);
 	margin: 0;
-	height: 100%;
 
+	height: 100%;
 	display: flex;
 	flex-direction: column;
 }
 
 hr {
 	border: calc(var(--line-size) / 2) solid var(--fg);
+
 	width: 100%;
 
 	&[orientation="vertical"] {
@@ -59,17 +69,24 @@ button {
 }
 
 input {
-	background-image: linear-gradient(155deg, var(--bg), transparent);
+	--angle-animation-time: calc(var(--animation-time) * 3);
+
+	background-image: linear-gradient(var(--input-angle), var(--bg), transparent);
 	padding: calc(var(--spacing) / 2) var(--spacing);
+
 	width: 100%;
 
+	transition: --input-angle var(--angle-animation-time);
+
 	&:focus {
-		--bg: var(--bg-2);
+		--input-angle: -25deg;
+		transition: --input-angle calc(var(--angle-animation-time) / 3);
 	}
 }
 
 button {
 	font-family: "laicon-solid";
+
 	min-width: 16px;
 	min-height: 16px;
 
@@ -84,10 +101,10 @@ progress {
 	--dot-size: 4px;
 
 	appearance: none;
-	width: 100%;
-	height: var(--bar-size-normal);
 
 	position: relative;
+	width: 100%;
+	height: var(--bar-size-normal);
 
 	cursor: pointer;
 
@@ -95,10 +112,10 @@ progress {
 		content: "";
 
 		background-color: var(--main-color);
-		width: var(--dot-size);
-		height: var(--dot-size);
 
 		position: absolute;
+		width: var(--dot-size);
+		height: var(--dot-size);
 		left: calc(var(--value) - var(--dot-size) / 2);
 		/*TODO*/
 		top: var(--bar-size-small);
@@ -132,7 +149,8 @@ progress {
 }
 
 ::-webkit-scrollbar {
-	background-color: transparent;
+	background-color: var(--bg);
+
 	width: var(--line-size);
 }
 
@@ -154,6 +172,7 @@ ul {
 	--gradient-size: calc(var(--spacing) * 4);
 
 	margin: 0;
+
 	width: 100%;
 
 	&[mask="both"] {

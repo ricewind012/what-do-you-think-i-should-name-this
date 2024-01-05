@@ -3,39 +3,15 @@ const {
 	ipcRenderer: pIPCRenderer,
 } = require("electron");
 
-const Addon = (p) =>
-	require(path.join(
-		__dirname,
-		"..",
-		"modules",
-		p,
-		"build",
-		"Release",
-		"addon"
-	));
-
 const cp = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
+const { Addon } = require("./Addon");
 
 const MPD = Addon("MPD");
 const X11 = Addon("X11");
 
-/**
- * Parses an INI(-like) format file.
- *
- * No sections.
- *
- * The values will be strings regardless of their type (libconfig).
- *
- * @param {string[]} vecFiles
- * @param {RegExp} rPattern
- *
- * @returns {any}
- *
- * @throws See {@link fs.readFileSync}.
- */
 const ParseINI = (vecFiles, rPattern) =>
 	fs
 		.readFileSync(vecFiles.find((e) => fs.existsSync(e)))
@@ -47,11 +23,6 @@ const ParseINI = (vecFiles, rPattern) =>
 		.map((e) => Object({ [e[1]]: e[2] }))
 		.reduce((a, b) => Object.assign(a, b));
 
-/**
- * Gets a list of processes.
- *
- * @returns {IProces[]}
- */
 const GetProcesses = () =>
 	cp
 		.execSync("ps -o pid,command -x")
@@ -64,14 +35,6 @@ const GetProcesses = () =>
 			Object({ pid: e[2], cmd: e[3], args: e[4]?.split(/\s+/).slice(1) })
 		);
 
-/**
- * Finds the argument from command line arguments.
- *
- * @param {string[]} vecArgs Command line arguments.
- * @param {string} strArgToFind Argument to look up.
- *
- * @returns {string}
- */
 function GetCommandArgument(vecArgs, strArgToFind) {
 	if (!vecArgs?.length) {
 		return;
@@ -86,10 +49,6 @@ function GetCommandArgument(vecArgs, strArgToFind) {
 		: vecArgs[vecArgs.indexOf(strArgToFind) + 1];
 }
 
-/**
- * @param {string} strProgram
- * @returns {[string[], RegExp]}
- */
 function GetConfigAndPattern(strProgram) {
 	const strConfigDir =
 		process.env.XDG_CONFIG_HOME || path.join(process.env.HOME, ".config");

@@ -15,10 +15,10 @@ GetSettings(const FunctionCallbackInfo<Value>& args)
 	}
 
 	auto szHost = mpd_settings_get_host(pSettings);
-	OBJ_MEMBER_IF_NOT_NULL("strHost", szHost);
+	OBJ_MEMBER_NULL("strHost", szHost, TO_STRING);
 
 	auto szPassword = mpd_settings_get_password(pSettings);
-	OBJ_MEMBER_IF_NOT_NULL("strPassword", szPassword);
+	OBJ_MEMBER_NULL("strPassword", szPassword, TO_STRING);
 
 	OBJ_MEMBER("unPort", Number::New(pIsolate, mpd_settings_get_port(pSettings)));
 	OBJ_MEMBER("unTimeout",

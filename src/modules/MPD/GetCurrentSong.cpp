@@ -1,5 +1,3 @@
-#include <unordered_map>
-
 #include "../shared/mpd.h"
 
 #define GO_AWAY_AND_FREE_ME(msg)                                               \
@@ -22,11 +20,7 @@ GetCurrentSong(const FunctionCallbackInfo<Value>& args)
 		GO_AWAY_AND_FREE_ME("pSong == nullptr (no current song?)");
 	}
 
-	auto pStatus = GetMPDStatus(pConnection);
-	if (!pStatus)
-		return;
-
-	auto obj = DescribeSong(pSong, pStatus);
+	auto obj = DescribeSong(pSong);
 
 	mpd_song_free(pSong);
 	mpd_connection_free(pConnection);

@@ -5,7 +5,12 @@ const {
 	Menu: CAppMenu,
 } = require("electron");
 const path = require("node:path");
+const { Addon } = require("./Addon");
 
+const X11 = Addon("X11");
+const [nScreenWidth, nScreenHeight] = X11.GetScreenSize();
+
+const k_nWindowMargin = 24;
 const k_pWindowSizes = [
 	{
 		name: "player",
@@ -18,29 +23,33 @@ const k_pWindowSizes = [
 ];
 
 function CreateWindow(strPageName, additionalOptions) {
-	const options = Object.assign(
-		{
-			autoHideMenuBar: true,
-			backgroundColor: "#00000000",
-			frame: false,
-			resizable: false,
-			transparent: true,
+	const pWindow = new CBrowserWindow(
+		Object.assign(
+			{
+				autoHideMenuBar: true,
+				backgroundColor: "#00000000",
+				frame: false,
+				resizable: false,
+				transparent: true,
 
-			show: false, // Try to prevent the white flash
-			skipTaskbar: true,
-			webPreferences: {
-				nodeIntegration: true,
-				preload: path.join(__dirname, "preload.js"),
+				show: false, // Try to prevent the white flash
+				skipTaskbar: true,
+				webPreferences: {
+					nodeIntegration: true,
+					preload: path.join(__dirname, "preload.js"),
+				},
 			},
-		},
-		additionalOptions
+			additionalOptions
+		)
 	);
-	const pWindow = new CBrowserWindow(options);
 
 	pWindow.loadFile(path.join("src", "ui", `${strPageName}.html`));
 	pWindow.once("ready-to-show", () => {
 		pWindow.show();
-		pWindow.webContents.openDevTools();
+
+		if (additionalOptions.devtools) {
+			pWindow.webContents.openDevTools();
+		}
 	});
 
 	return pWindow;
@@ -57,10 +66,20 @@ function CreateWindow(strPageName, additionalOptions) {
 		.getSwitchValue("windows")
 		.split(",")
 		.forEach((w) => {
-			const { size: vecWindowSize } = k_pWindowSizes.find((e) => e.name == w);
+			const pWindowBounds = k_pWindowSizes.find((e) => e.name == w);
+
+			if (!pWindowBounds) {
+				console.error('no such window "%s"', w);
+				return;
+			}
+
+			const [nWindowWidth, nWindowHeight] = pWindowBounds.size;
 			const pWindow = CreateWindow(w, {
-				width: vecWindowSize[0],
-				height: vecWindowSize[1],
+				x: nScreenWidth - k_nWindowMargin - nWindowWidth,
+				y: nScreenHeight - k_nWindowMargin - nWindowHeight,
+				width: nWindowWidth,
+				height: nWindowHeight,
+				devtools: pApp.commandLine.hasSwitch("devtools"),
 			});
 
 			pIPCMain.handle("get-bounds", () => {

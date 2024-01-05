@@ -1,10 +1,5 @@
 /*global id sleep CLog CLogTime electron*/
 
-const k_strEmptyImage = "data:image/gif;base64,R0lGODlhAQABADs7Ozs=";
-const k_vecImageFormats = ["avif", "bmp", "jpg", "jpeg", "png"];
-const k_nListHeight = 350;
-const k_nInterval = 2_500;
-
 class CPlayerList {
 	constructor() {
 		this.m_bRendered = false;
@@ -35,6 +30,7 @@ class CPlayerList {
 		const elInput = pElements.elSearchInput;
 		pElements.elList.hidden = true;
 		pElements.elListSearchContainer.hidden = false;
+		elInput.value = "";
 		elInput.focus();
 	}
 
@@ -53,7 +49,7 @@ class CPlayerList {
 				(e, i) =>
 					vecKeys
 						.map((m) => e.metadata[m]?.toLowerCase())
-						.join("")
+						.join(" ")
 						.includes(strQuery.toLowerCase()) && i
 			)
 			.filter(Boolean)
@@ -79,13 +75,14 @@ class CPlayerList {
 	}
 
 	Render() {
-		this.m_pRenderLogger.TimeStart();
 		const elList = pElements.elList;
 
 		// Do it only on the first try.
 		if (this.m_bRendered) {
 			return;
 		}
+
+		this.m_pRenderLogger.TimeStart();
 
 		this.m_vecSongs = electron.MPD.Database.GetSongList();
 		this.m_vecEntries = this.m_vecSongs.map((e, i) => {
@@ -127,10 +124,10 @@ class CPlayer {
 		/** @type IMPDServerStatus */
 		this.m_pServerStatus = null;
 		this.m_strMusicDir = (() => {
-			const [vecFiles, rPattern] = electron.GetConfigAndPattern("mpd");
+			const [vecFiles, pPattern] = electron.GetConfigAndPattern("mpd");
 
 			return electron
-				.ParseINI(vecFiles, rPattern)
+				.ParseINI(vecFiles, pPattern)
 				.music_directory.replace("~", electron.env.HOME);
 		})();
 	}
@@ -211,6 +208,11 @@ class CPlayer {
 	}
 }
 
+const k_strEmptyImage = "data:image/gif;base64,R0lGODlhAQABADs7Ozs=";
+const k_vecImageFormats = ["avif", "bmp", "jpg", "jpeg", "png"];
+const k_nListHeight = 350;
+const k_nInterval = 2_500;
+
 let pElements = null;
 let pList = new CPlayerList();
 let pPlayer = new CPlayer();
@@ -241,7 +243,6 @@ window.addEventListener("keydown", (ev) => {
 
 		case "/":
 			pList.SearchStart();
-			pElements.elSearchInput.value = "";
 			break;
 	}
 });

@@ -2,8 +2,8 @@
 
 #include "../shared/mpd.h"
 
-#define GO_AWAY_AND_FREE_ME(msg)                                               \
-	ThrowException(pIsolate, msg);                                               \
+#define GO_AWAY_AND_FREE_ME(MSG)                                               \
+	ThrowException(pIsolate, MSG);                                               \
 	mpd_status_free(pStatus);                                                    \
 	mpd_connection_free(pConnection);                                            \
 	return
@@ -19,11 +19,11 @@ GetServerStatus(const FunctionCallbackInfo<Value>& args)
 	if (!pConnection)
 		return;
 
-	auto pStatus = GetMPDStatus(pConnection);
-	if (!pStatus)
-		return;
+	auto pStatus = mpd_run_status(pConnection);
+	if (!pStatus) {
+		GO_AWAY_AND_FREE_ME(mpd_status_get_error(pStatus));
+	}
 
-	// TODO: this does it twice
 	auto eState = mpd_status_get_state(pStatus);
 	if (eState == MPD_STATE_UNKNOWN) {
 		GO_AWAY_AND_FREE_ME("eState == MPD_STATE_UNKNOWN");
@@ -64,7 +64,7 @@ GetServerStatus(const FunctionCallbackInfo<Value>& args)
 	}
 
 	auto szPartition = mpd_status_get_partition(pStatus);
-	OBJ_MEMBER_IF_NOT_NULL("strPartition", szPartition);
+	OBJ_MEMBER_NULL("strPartition", szPartition, TO_STRING);
 
 	mpd_status_free(pStatus);
 	mpd_connection_free(pConnection);

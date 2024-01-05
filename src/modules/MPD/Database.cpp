@@ -1,5 +1,3 @@
-#include <unordered_map>
-
 #include "../shared/mpd.h"
 
 void
@@ -13,16 +11,12 @@ GetSongList(const FunctionCallbackInfo<Value>& args)
 	if (!pConnection)
 		return;
 
-	auto pStatus = GetMPDStatus(pConnection);
-	if (!pStatus)
-		return;
-
 	mpd_song* pSong;
 	size_t ulIndex = 0;
 
 	while ((pSong = mpd_run_get_queue_song_pos(pConnection, ulIndex)) !=
 				 nullptr) {
-		result->Set(context, ulIndex, DescribeSong(pSong, pStatus)).FromJust();
+		result->Set(context, ulIndex, DescribeSong(pSong)).FromJust();
 		ulIndex++;
 	}
 
@@ -45,10 +39,6 @@ Navigate(const FunctionCallbackInfo<Value>& args)
 	if (!pConnection)
 		return;
 
-	auto pStatus = GetMPDStatus(pConnection);
-	if (!pStatus)
-		return;
-
 	size_t ulIndex = 0;
 	auto path = String::Utf8Value(pIsolate, args[0]);
 	auto szPath = *path;
@@ -60,6 +50,7 @@ Navigate(const FunctionCallbackInfo<Value>& args)
 		const mpd_song* pSong;
 		const mpd_directory* pDirectory;
 		const mpd_playlist* pPlaylist;
+		Local<Value> value;
 
 		switch (mpd_entity_get_type(pEntity)) {
 			case MPD_ENTITY_TYPE_UNKNOWN:
@@ -67,24 +58,21 @@ Navigate(const FunctionCallbackInfo<Value>& args)
 
 			case MPD_ENTITY_TYPE_SONG:
 				pSong = mpd_entity_get_song(pEntity);
-				result->Set(context, ulIndex, DescribeSong(pSong, pStatus)).FromJust();
+				value = DescribeSong(pSong);
 				break;
 
 			case MPD_ENTITY_TYPE_DIRECTORY:
 				pDirectory = mpd_entity_get_directory(pEntity);
-				result
-					->Set(context, ulIndex, TO_STRING(mpd_directory_get_path(pDirectory)))
-					.FromJust();
+				value = TO_STRING(mpd_directory_get_path(pDirectory));
 				break;
 
 			case MPD_ENTITY_TYPE_PLAYLIST:
 				pPlaylist = mpd_entity_get_playlist(pEntity);
-				result
-					->Set(context, ulIndex, TO_STRING(mpd_playlist_get_path(pPlaylist)))
-					.FromJust();
+				value = TO_STRING(mpd_playlist_get_path(pPlaylist));
 				break;
 		}
 
+		result->Set(context, ulIndex, value).FromJust();
 		mpd_entity_free(pEntity);
 		ulIndex++;
 	}
@@ -96,22 +84,10 @@ Navigate(const FunctionCallbackInfo<Value>& args)
 Local<Object>
 Database()
 {
-	auto pIsolate = Isolate::GetCurrent();
-	auto context = pIsolate->GetCurrentContext();
-	auto obj = Object::New(pIsolate);
-
-	std::unordered_map<const char*, FunctionCallback> mapFunctions = {
+	auto obj = SetFunctions({
 		{ "GetSongList", GetSongList },
 		{ "Navigate", Navigate },
-	};
-
-	for (const auto& [k, v] : mapFunctions) {
-		auto tpl = FunctionTemplate::New(pIsolate, v);
-		auto fn = tpl->GetFunction(context).ToLocalChecked();
-
-		fn->SetName(TO_STRING("hiii"));
-		OBJ_MEMBER(k, fn);
-	}
+	});
 
 	return obj;
 }

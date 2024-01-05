@@ -3,7 +3,7 @@
 #include "shared.h"
 
 Local<Object>
-DescribeSong(const mpd_song* pSong, const mpd_status* pStatus);
+DescribeSong(const mpd_song* pSong);
 
 Local<Object>
 DescribeSongMetadata(const mpd_song* pSong);

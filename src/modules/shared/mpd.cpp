@@ -3,13 +3,13 @@
 #include "mpd.h"
 #include "shared.h"
 
-#define GO_AWAY_AND_FREE_ME(msg)                                               \
-	ThrowException(pIsolate, msg);                                               \
+#define GO_AWAY_AND_FREE_ME(MSG)                                               \
+	ThrowException(pIsolate, MSG);                                               \
 	mpd_connection_free(pConnection);                                            \
 	return nullptr
 
 Local<Object>
-DescribeSong(const mpd_song* pSong, const mpd_status* pStatus)
+DescribeSong(const mpd_song* pSong)
 {
 	auto pIsolate = Isolate::GetCurrent();
 	auto context = pIsolate->GetCurrentContext();
@@ -20,10 +20,7 @@ DescribeSong(const mpd_song* pSong, const mpd_status* pStatus)
 	OBJ_MEMBER("time", DescribeSongTime(pSong));
 
 	auto pAudioFormat = mpd_song_get_audio_format(pSong);
-	if (pAudioFormat)
-		OBJ_MEMBER("format", DescribeSongAudioFormat(pAudioFormat));
-	else
-		OBJ_MEMBER("format", Null(pIsolate));
+	OBJ_MEMBER_NULL("format", pAudioFormat, DescribeSongAudioFormat);
 
 	return obj;
 }
@@ -36,7 +33,6 @@ DescribeSongMetadata(const mpd_song* pSong)
 	auto obj = Object::New(pIsolate);
 
 	std::unordered_map<const char*, mpd_tag_type> mapMembers = {
-		// clang-format off
 		{ "strArtist", MPD_TAG_ARTIST },
 		{ "strAlbum", MPD_TAG_ALBUM },
 		{ "strAlbumArtist", MPD_TAG_ALBUM_ARTIST },
@@ -49,7 +45,7 @@ DescribeSongMetadata(const mpd_song* pSong)
 		{ "strComment", MPD_TAG_COMMENT },
 		{ "strDisc", MPD_TAG_DISC },
 
-		// Are any of these useful ?
+		// Are any of these useful ? I don't care !
 		/*
 		{ "strOriginalDate",	MPD_TAG_ORIGINAL_DATE, },
 
@@ -57,7 +53,7 @@ DescribeSongMetadata(const mpd_song* pSong)
 		{ "strAlbumArtistSort",	MPD_TAG_ALBUM_ARTIST_SORT, },
 		{ "strAlbumSort",	MPD_TAG_ALBUM_SORT, },
 		{ "strComposerSort",	MPD_TAG_COMPOSER_SORT, },
-	
+
 		{ "strLabel",	MPD_TAG_LABEL, },
 		{ "strGrouping",	MPD_TAG_GROUPING, },
 		{ "strWork",	MPD_TAG_WORK, },
@@ -74,13 +70,12 @@ DescribeSongMetadata(const mpd_song* pSong)
 		{ "strMusicBrainzReleaseTrackID",	MPD_TAG_MUSICBRAINZ_RELEASETRACKID, },
 		{ "strMusicBrainzWorkID",	MPD_TAG_MUSICBRAINZ_WORKID, },
 		*/
-		// clang-format on
 	};
 
 	for (const auto& [k, v] : mapMembers) {
 		auto szTag = mpd_song_get_tag(pSong, v, 0);
 
-		OBJ_MEMBER_IF_NOT_NULL(k, szTag);
+		OBJ_MEMBER_NULL(k, szTag, TO_STRING);
 	}
 
 	return obj;

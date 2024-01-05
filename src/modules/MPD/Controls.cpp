@@ -1,9 +1,7 @@
-#include <unordered_map>
-
 #include "../shared/mpd.h"
 
-#define GO_AWAY_AND_FREE_ME(msg)                                               \
-	ThrowException(pIsolate, msg);                                               \
+#define GO_AWAY_AND_FREE_ME(MSG)                                               \
+	ThrowException(pIsolate, MSG);                                               \
 	mpd_settings_free(pSettings);                                                \
 	mpd_connection_free(pConnection);                                            \
 	return
@@ -138,11 +136,7 @@ send_to_mpd_seek(const FunctionCallbackInfo<Value>& args)
 Local<Object>
 Controls()
 {
-	auto pIsolate = Isolate::GetCurrent();
-	auto context = pIsolate->GetCurrentContext();
-	auto obj = Object::New(pIsolate);
-
-	std::unordered_map<const char*, FunctionCallback> mapFunctions = {
+	auto obj = SetFunctions({
 		{ "Next", send_to_mpd_next },
 		{ "Previous", send_to_mpd_previous },
 		{ "Stop", send_to_mpd_stop },
@@ -162,15 +156,7 @@ Controls()
 
 		{ "SetMixrampDelay", send_to_mpd_mixrampdelay },
 		{ "SetMixrampDB", send_to_mpd_mixrampdb },
-	};
-
-	for (const auto& [k, v] : mapFunctions) {
-		auto tpl = FunctionTemplate::New(pIsolate, v);
-		auto fn = tpl->GetFunction(context).ToLocalChecked();
-
-		fn->SetName(TO_STRING("hiii"));
-		OBJ_MEMBER(k, fn);
-	}
+	});
 
 	return obj;
 }

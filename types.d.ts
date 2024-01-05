@@ -8,12 +8,44 @@ declare interface IProcess {
 declare var electron: {
 	MPD: IModuleMPD;
 	X11: IModuleX11;
+
+	/**
+	 * Finds the argument from command line arguments.
+	 *
+	 * @param args Command line arguments.
+	 * @param argToFind Argument to look up.
+	 */
+	GetCommandArguments(args: string[], argToFind: string): string;
+
+	/**
+	 * @param program
+	 */
+	GetConfigAndPattern(program: string): [string[], RegExp];
+
+	/**
+	 * Gets a list of processes.
+	 */
+	GetProcesses(): IProcess[];
+
+	/**
+	 * Parses an INI(-like) format file.
+	 *
+	 * No sections.
+	 *
+	 * The values will be strings regardless of their type (libconfig).
+	 *
+	 * @param files Files to look up for existing.
+	 * @param pattern The pattern to parse the file by.
+	 *
+	 * @throws See {@link fs.readFileSync}.
+	 */
+	ParseINI(files: string[], pattern: RegExp): any;
 };
 
 // shared.js
 declare interface ILogger {
-	Log(format: string, argument: any): void;
-	Assert(assertion: boolean, format: string, argument: any): void;
+	Log(format: string, ...arguments: any): void;
+	Assert(assertion: boolean, format: string, ...arguments: any): void;
 }
 
 declare interface ITimeLogger extends ILogger {
@@ -104,6 +136,10 @@ declare interface IModuleMPD {
 
 	Database: {
 		GetSongList(): IMPDSong[];
+
+		/**
+		 * If `string`, folder or a playlist.
+		 */
 		Navigate(path: string): (IMPDSong | string)[];
 	};
 
