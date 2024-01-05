@@ -3,7 +3,10 @@
 #include "../shared/mpd.h"
 
 void
-GetList(const FunctionCallbackInfo<Value>& args);
+GetSongList(const FunctionCallbackInfo<Value>& args);
+
+void
+Navigate(const FunctionCallbackInfo<Value>& args);
 
 Local<Object>
 Database();

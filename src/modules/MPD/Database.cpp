@@ -2,10 +2,33 @@
 
 #include "../shared/mpd.h"
 
-#define GO_AWAY_AND_FREE_ME(msg)                                               \
-	ThrowException(pIsolate, msg);                                               \
-	mpd_connection_free(pConnection);                                            \
-	return
+void
+GetSongList(const FunctionCallbackInfo<Value>& args)
+{
+	auto pIsolate = args.GetIsolate();
+	auto context = pIsolate->GetCurrentContext();
+	auto result = Array::New(pIsolate);
+
+	auto pConnection = GetMPDConnection();
+	if (!pConnection)
+		return;
+
+	auto pStatus = GetMPDStatus(pConnection);
+	if (!pStatus)
+		return;
+
+	mpd_song* pSong;
+	size_t ulIndex = 0;
+
+	while ((pSong = mpd_run_get_queue_song_pos(pConnection, ulIndex)) !=
+				 nullptr) {
+		result->Set(context, ulIndex, DescribeSong(pSong, pStatus)).FromJust();
+		ulIndex++;
+	}
+
+	mpd_connection_free(pConnection);
+	args.GetReturnValue().Set(result);
+}
 
 void
 Navigate(const FunctionCallbackInfo<Value>& args)
@@ -67,35 +90,6 @@ Navigate(const FunctionCallbackInfo<Value>& args)
 	}
 
 	mpd_connection_free(pConnection);
-
-	args.GetReturnValue().Set(result);
-}
-
-void
-GetList(const FunctionCallbackInfo<Value>& args)
-{
-	auto pIsolate = args.GetIsolate();
-	auto context = pIsolate->GetCurrentContext();
-	auto result = Array::New(pIsolate);
-
-	auto pConnection = GetMPDConnection();
-	if (!pConnection)
-		return;
-
-	auto pStatus = GetMPDStatus(pConnection);
-	if (!pStatus)
-		return;
-
-	mpd_song* pSong;
-	size_t ulIndex = 0;
-	while ((pSong = mpd_run_get_queue_song_pos(pConnection, ulIndex)) !=
-				 nullptr) {
-		result->Set(context, ulIndex, DescribeSong(pSong, pStatus)).FromJust();
-		ulIndex++;
-	}
-
-	mpd_connection_free(pConnection);
-
 	args.GetReturnValue().Set(result);
 }
 
@@ -107,8 +101,8 @@ Database()
 	auto obj = Object::New(pIsolate);
 
 	std::unordered_map<const char*, FunctionCallback> mapFunctions = {
+		{ "GetSongList", GetSongList },
 		{ "Navigate", Navigate },
-		{ "GetList", GetList },
 	};
 
 	for (const auto& [k, v] : mapFunctions) {

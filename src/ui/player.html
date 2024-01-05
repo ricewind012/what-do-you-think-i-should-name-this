@@ -23,9 +23,31 @@
 	<body id="player">
 		<ul
 			id="player-list"
-			class="player-section"
+			class="player-list player-section"
+			mask="bottom"
 			hidden
 		></ul>
+
+		<ul
+			id="player-list-search-container"
+			class="player-section"
+			hidden
+		>
+			<li
+				id="player-search-form-container"
+				class="list-entry"
+			>
+				<input id="player-search-input" />
+			</li>
+
+			<li id="player-list-search-actual-container">
+				<ul
+					id="player-list-search"
+					class="player-list"
+					mask="both"
+				></ul>
+			</li>
+		</ul>
 
 		<div id="player-section-main">
 			<main class="player-section">
@@ -93,7 +115,7 @@
 	</body>
 
 	<template id="player-list-entry">
-		<li class="list-entry">
+		<li>
 			<span class="list-artist"></span>
 			<span class="list-title text-ellipsis"></span>
 			<span class="list-time"></span>

@@ -2,12 +2,6 @@
 
 #include "shared.h"
 
-#define OBJ_MEMBER_IF_NOT_NULL(k, v)                                           \
-	if (v)                                                                       \
-		OBJ_MEMBER(k, TO_STRING(v));                                               \
-	else                                                                         \
-		OBJ_MEMBER(k, Null(pIsolate));
-
 Local<Object>
 DescribeSong(const mpd_song* pSong, const mpd_status* pStatus);
 

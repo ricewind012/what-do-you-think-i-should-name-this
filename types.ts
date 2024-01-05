@@ -5,15 +5,21 @@ declare interface IProcess {
 	args: string[];
 }
 
+declare var electron: {
+	MPD: IModuleMPD;
+	X11: IModuleX11;
+};
+
+// shared.js
 declare interface ILogger {
 	Log(format: string, argument: any): void;
 	Assert(assertion: boolean, format: string, argument: any): void;
 }
 
-declare var electron: {
-	MPD: IModuleMPD;
-	X11: IModuleX11;
-};
+declare interface ITimeLogger extends ILogger {
+	TimeStart(): void;
+	TimeEnd(): void;
+}
 
 // mpd
 declare interface IMPDSong {
@@ -97,7 +103,7 @@ declare interface IModuleMPD {
 	};
 
 	Database: {
-		GetList(): IMPDSong[];
+		GetSongList(): IMPDSong[];
 		Navigate(path: string): (IMPDSong | string)[];
 	};
 

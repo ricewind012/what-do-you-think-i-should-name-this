@@ -7,18 +7,16 @@ class CLog {
 		this.m_strMethod = strMethod;
 	}
 
-	Log(strFormat, arg) {
-		arg = strFormat.match(/%[a-z]/) ? arg : "";
-
+	Log(strFormat, ...args) {
 		console[this.m_strMethod](
 			`%c${this.m_strName}%c ${strFormat}`,
 			"background-color: black; color: white; padding: 0 1ch",
 			"",
-			arg
+			...args
 		);
 	}
 
-	Assert(bAssertion, strFormat, arg) {
+	Assert(bAssertion, strFormat, ...args) {
 		if (bAssertion) {
 			return;
 		}
@@ -26,7 +24,29 @@ class CLog {
 		// fucking kill yourself
 		const strPrevMethod = this.m_strMethod;
 		this.m_strMethod = "error";
-		this.Log(`Assertion failed: ${strFormat}`, arg);
+		this.Log(`Assertion failed: ${strFormat}`, ...args);
 		this.m_strMethod = strPrevMethod;
+	}
+}
+
+class CLogTime extends CLog {
+	constructor(strName, strLabel) {
+		super(strName, "info");
+
+		this.m_strLabel = strLabel;
+	}
+
+	TimeStart() {
+		this.m_pDate = new Date();
+	}
+
+	TimeEnd() {
+		const pCurrentDate = new Date();
+
+		this.Log(
+			"%s: took %o seconds",
+			this.m_strLabel,
+			(pCurrentDate - this.m_pDate) / 1000
+		);
 	}
 }

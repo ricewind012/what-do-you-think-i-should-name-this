@@ -2,11 +2,6 @@
 
 #include "../shared/mpd.h"
 
-#define GO_AWAY_AND_FREE_ME(msg)                                               \
-	ThrowException(pIsolate, msg);                                               \
-	mpd_settings_free(pSettings);                                                \
-	return
-
 void
 GetSettings(const FunctionCallbackInfo<Value>& args)
 {
@@ -30,6 +25,5 @@ GetSettings(const FunctionCallbackInfo<Value>& args)
 						 Number::New(pIsolate, mpd_settings_get_timeout_ms(pSettings)));
 
 	mpd_settings_free(pSettings);
-
 	args.GetReturnValue().Set(obj);
 }

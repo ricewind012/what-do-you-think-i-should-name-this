@@ -4,6 +4,7 @@
 
 #define GO_AWAY_AND_FREE_ME(msg)                                               \
 	ThrowException(pIsolate, msg);                                               \
+	mpd_song_free(pSong);                                                        \
 	mpd_connection_free(pConnection);                                            \
 	return
 
@@ -29,6 +30,5 @@ GetCurrentSong(const FunctionCallbackInfo<Value>& args)
 
 	mpd_song_free(pSong);
 	mpd_connection_free(pConnection);
-
 	args.GetReturnValue().Set(obj);
 }

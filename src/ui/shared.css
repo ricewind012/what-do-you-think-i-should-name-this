@@ -4,12 +4,12 @@
 
 :root {
 	--main-color: white;
-	--bg:   color-mix(in srgb, var(--main-color) 25%, transparent);
+	--bg: color-mix(in srgb, var(--main-color) 25%, transparent);
 	--bg-2: color-mix(in srgb, var(--main-color) 50%, transparent);
-	--fg:   var(--main-color);
+	--fg: var(--main-color);
 	--fg-2: color-mix(in srgb, var(--main-color) 75%, transparent);
 
-	--font-name: 'MS Gothic';
+	--font-name: "MS Gothic";
 	--font-name: serif;
 	--font-size: 9pt;
 
@@ -50,12 +50,26 @@ hr {
 	}
 }
 
+input,
 button {
 	appearance: none;
 	outline: none;
 	background-color: transparent;
-	font-family: 'laicon-solid';
 	border: none;
+}
+
+input {
+	background-image: linear-gradient(155deg, var(--bg), transparent);
+	padding: calc(var(--spacing) / 2) var(--spacing);
+	width: 100%;
+
+	&:focus {
+		--bg: var(--bg-2);
+	}
+}
+
+button {
+	font-family: "laicon-solid";
 	min-width: 16px;
 	min-height: 16px;
 
@@ -78,7 +92,7 @@ progress {
 	cursor: pointer;
 
 	&::before {
-		content: '';
+		content: "";
 
 		background-color: var(--main-color);
 		width: var(--dot-size);
@@ -100,7 +114,7 @@ progress {
 	&::-webkit-progress-bar {
 		height: var(--bar-size-small);
 
-		transition: height var(--animation-time);
+		transition: var(--animation-time);
 	}
 
 	&::-webkit-progress-inner-element {
@@ -126,6 +140,10 @@ progress {
 	background-color: var(--main-color);
 }
 
+::selection {
+	text-decoration: underline;
+}
+
 h1 {
 	font-size: var(--font-size);
 	font-weight: bold;
@@ -135,16 +153,37 @@ h1 {
 ul {
 	--gradient-size: calc(var(--spacing) * 4);
 
-	mask: linear-gradient(
-		to bottom,
-		/*
-		transparent 0%,
-		black var(--gradient-size),
-		*/
-		black calc(100% - var(--gradient-size)),
-		transparent 100%
-	);
 	margin: 0;
+	width: 100%;
+
+	&[mask="both"] {
+		mask: linear-gradient(
+			to bottom,
+			transparent 0,
+			black var(--gradient-size),
+			black calc(100% - var(--gradient-size)),
+			transparent 100%
+		);
+		padding-block: var(--gradient-size);
+	}
+
+	&[mask="top"] {
+		mask: linear-gradient(
+			to bottom,
+			transparent 0%,
+			black var(--gradient-size)
+		);
+		padding-block-start: var(--gradient-size);
+	}
+
+	&[mask="bottom"] {
+		mask: linear-gradient(
+			to bottom,
+			black calc(100% - var(--gradient-size)),
+			transparent 100%
+		);
+		padding-block-end: var(--gradient-size);
+	}
 }
 
 li {

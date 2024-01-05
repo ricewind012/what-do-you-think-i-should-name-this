@@ -10,17 +10,41 @@
 	}
 }
 
-#player-list {
+.player-list {
 	background-color: var(--bg);
 
 	overflow: hidden scroll;
+}
+
+#player-search-form-container,
+#player-list-search-container,
+#player-list-search-actual-container {
+	padding: 0;
+
+	overflow: hidden;
+
+	&:hover {
+		background-color: transparent;
+	}
+}
+
+#player-list-search-actual-container {
+	height: 100%;
+}
+
+#player-search-form {
+	width: 100%;
+}
+
+#player-list-search {
+	padding-inline: var(--spacing);
 }
 
 .list-artist {
 	flex-shrink: 0;
 
 	&::after {
-		content: ' -- ';
+		content: " -- ";
 
 		color: var(--fg-2);
 	}
@@ -104,7 +128,7 @@
 	cursor: pointer;
 
 	&::before {
-		content: '';
+		content: "";
 
 		position: absolute;
 		width: var(--size);

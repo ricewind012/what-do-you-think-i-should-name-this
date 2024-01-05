@@ -68,6 +68,5 @@ GetServerStatus(const FunctionCallbackInfo<Value>& args)
 
 	mpd_status_free(pStatus);
 	mpd_connection_free(pConnection);
-
 	args.GetReturnValue().Set(obj);
 }
