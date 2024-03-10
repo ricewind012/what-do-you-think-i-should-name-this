@@ -1,5 +1,3 @@
-#include <unordered_map>
-
 #include "../shared/mpd.h"
 
 #define GO_AWAY_AND_FREE_ME(MSG)                                               \

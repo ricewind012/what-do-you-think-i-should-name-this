@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta
+			http-equiv="Content-Security-Policy"
+			content="default-src 'unsafe-inline' file: data:"
+		/>
+
+		<meta
+			name="color-scheme"
+			content="light dark"
+		/>
+		<link
+			rel="stylesheet"
+			href="shared.css"
+		/>
+		<link
+			rel="stylesheet"
+			href="procs.css"
+		/>
+
+		<title>Process List</title>
+	</head>
+
+	<body>
+		<aside id="proc-list-container">
+			<header id="proc-list-header">
+				<span class="list-row list-row-pid">PID</span>
+				<span class="list-row list-row-cmd">Command</span>
+				<span class="list-row list-row-args">Arguments</span>
+			</header>
+
+			<ul
+				id="proc-list"
+				mask="both"
+			></ul>
+		</aside>
+
+		<main id="procs-stats">
+			<label>
+				CPU
+				<progress
+					id="procs-usage-cpu"
+					disabled
+					max="1"
+					value="0"
+				></progress>
+			</label>
+
+			<label>
+				RAM
+				<progress
+					id="procs-usage-memory"
+					disabled
+					max="1"
+					value="0"
+				></progress>
+			</label>
+		</main>
+	</body>
+
+	<template id="proc-entry">
+		<li>
+			<span class="list-row list-row-pid"></span>
+			<span class="list-row list-row-cmd"></span>
+			<span class="list-row list-row-args text-ellipsis"></span>
+		</li>
+	</template>
+
+	<script src="shared.js"></script>
+	<script src="procs.js"></script>
+</html>

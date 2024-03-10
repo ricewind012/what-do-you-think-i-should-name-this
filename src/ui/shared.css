@@ -46,6 +46,24 @@ body {
 	flex-direction: column;
 }
 
+/* Open on hover
+body {
+	--border-size: 12px;
+
+	mask: linear-gradient(0deg, black, black);
+	border-right: var(--border-size) solid var(--main-color);
+	margin-left: auto;
+
+	overflow: hidden;
+
+	&:not(:hover) {
+		background-color: transparent;
+
+		width: var(--border-size);
+	}
+}
+*/
+
 hr {
 	border: calc(var(--line-size) / 2) solid var(--fg);
 
@@ -65,6 +83,7 @@ button {
 	appearance: none;
 	outline: none;
 	background-color: transparent;
+	color: var(--main-color);
 	border: none;
 }
 
@@ -121,7 +140,7 @@ progress {
 		top: var(--bar-size-small);
 	}
 
-	&:hover {
+	&:not([disabled]):hover {
 		--dot-size: var(--bar-size-normal);
 		--bar-size-small: var(--bar-size-normal);
 
@@ -145,6 +164,10 @@ progress {
 
 	&::-webkit-progress-value {
 		background-color: var(--main-color);
+	}
+
+	&[disabled] {
+		pointer-events: none;
 	}
 }
 
@@ -216,6 +239,15 @@ li {
 	&:hover {
 		background-color: var(--bg);
 	}
+
+	&[aria-disabled] {
+		pointer-events: none;
+	}
+}
+
+label {
+	display: flex;
+	align-items: center;
 }
 
 .text-ellipsis {

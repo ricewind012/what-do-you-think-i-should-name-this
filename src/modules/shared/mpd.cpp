@@ -1,7 +1,4 @@
-#include <mpd/client.h>
-
 #include "mpd.h"
-#include "shared.h"
 
 #define GO_AWAY_AND_FREE_ME(MSG)                                               \
 	ThrowException(pIsolate, MSG);                                               \

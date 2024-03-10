@@ -11,4 +11,7 @@ const Addon = (p) =>
 		"addon"
 	));
 
+const IsNumber = (n) => Number.isFinite(Number(n));
+
 exports.Addon = Addon;
+exports.IsNumber = IsNumber;

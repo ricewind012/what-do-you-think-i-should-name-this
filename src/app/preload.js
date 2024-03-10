@@ -3,19 +3,20 @@ const {
 	ipcRenderer: pIPCRenderer,
 } = require("electron");
 
-const cp = require("node:child_process");
 const fs = require("node:fs");
-const os = require("node:os");
 const path = require("node:path");
-const { Addon } = require("./Addon");
+const { Addon, IsNumber } = require("./shared");
 
 const MPD = Addon("MPD");
 const X11 = Addon("X11");
 
-const ParseINI = (vecFiles, rPattern) =>
-	fs
-		.readFileSync(vecFiles.find((e) => fs.existsSync(e)))
-		.toString()
+const k_unListHeight = 350;
+const k_unUpdateInterval = 2_500;
+
+const ReadFile = (strName) => fs.readFileSync(strName).toString();
+
+const ParseFile = (vecFiles, rPattern) =>
+	ReadFile(vecFiles.find((e) => fs.existsSync(e)))
 		.split("\n")
 		.filter((e) => e && e[0] != "#" && e[0] != "/")
 		.map((e) => e.match(rPattern))
@@ -24,15 +25,24 @@ const ParseINI = (vecFiles, rPattern) =>
 		.reduce((a, b) => Object.assign(a, b));
 
 const GetProcesses = () =>
-	cp
-		.execSync("ps -o pid,command -x")
-		.toString()
-		.split("\n")
-		.slice(1)
-		.map((e) => e.match(/^(\s+)?(\d+)\s+(.*?)(\s+(.*))?$/))
-		.filter(Boolean)
+	fs
+		.readdirSync("/proc")
+		.filter((e) => IsNumber(e))
+		.map((e) => [
+			e,
+			ReadFile("/proc/" + e + "/cmdline")
+				.replace(/\0/g, " ")
+				.match(/^([a-zA-Z-_/]+)\s+(.*) $/),
+			ParseFile(["/proc/" + e + "/status"], /(.*):\s+(.*)/),
+		])
+		.filter((e) => e[1])
 		.map((e) =>
-			Object({ pid: e[2], cmd: e[3], args: e[4]?.split(/\s+/).slice(1) })
+			Object({
+				pid: e[0],
+				cmd: e[1][1],
+				args: e[1][2].split(/\s+/),
+				status: e[2],
+			})
 		);
 
 function GetCommandArgument(vecArgs, strArgToFind) {
@@ -97,46 +107,48 @@ pIPCRenderer.on("window-message", (ev, args) => {
 });
 
 pContextBridge.exposeInMainWorld("electron", {
-	cp,
 	fs,
-	os,
 	path,
 
-	env: {
-		...process.env,
+	process: {
+		env: { ...process.env },
+		kill: process.kill,
+		platform: process.platform,
 	},
 
 	MPD,
 	X11,
 
+	k_unListHeight,
+	k_unUpdateInterval,
+
 	GetCommandArgument,
 	GetConfigAndPattern,
 	GetProcesses,
-	ParseINI,
+	ParseFile,
 
 	SendMesssageToParent(msg) {
 		pIPCRenderer.send("send-message-to-parent", msg);
 	},
 
 	Window: {
-		Close(hWindow) {
-			pIPCRenderer.send("close-window", hWindow);
-		},
-
-		Create(strPageName, options, msg) {
-			return pIPCRenderer.invoke("create-window", {
-				page: strPageName,
-				options,
-				msg,
-			});
-		},
-
 		GetBounds() {
 			return pIPCRenderer.invoke("get-bounds");
 		},
 
 		SetBounds(pBounds) {
 			pIPCRenderer.send("set-bounds", pBounds);
+		},
+
+		SetIntendedBounds(strName) {
+			pIPCRenderer.send("set-intended-bounds", strName);
+		},
+	},
+
+	// Window-specific things
+	Steam: {
+		Evaluate(strJS) {
+			return pIPCRenderer.invoke("eval-steam-js", strJS);
 		},
 	},
 });

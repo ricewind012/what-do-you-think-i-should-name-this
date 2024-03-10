@@ -4,25 +4,50 @@ const {
 	ipcMain: pIPCMain,
 	Menu: CAppMenu,
 } = require("electron");
+const CDP = require("chrome-remote-interface");
 const path = require("node:path");
-const { Addon } = require("./Addon");
+const { Addon } = require("./shared");
 
 const X11 = Addon("X11");
-const [nScreenWidth, nScreenHeight] = X11.GetScreenSize();
+const [unScreenWidth, unScreenHeight] = X11.GetScreenSize();
 
-const k_nWindowMargin = 24;
 const k_pWindowSizes = [
 	{
 		name: "player",
-		size: [400, 140],
+		bounds: {
+			x: unScreenWidth - 400,
+			y: unScreenHeight - 140,
+			width: 400,
+			height: 140,
+		},
 	},
 	{
 		name: "procs",
-		size: [400, 1080],
+		bounds: {
+			x: unScreenWidth - 400,
+			y: 275,
+			width: 400,
+			height: 250,
+		},
+	},
+	{
+		name: "steam",
+		bounds: {
+			x: unScreenWidth - 400,
+			y: unScreenHeight - 140,
+			width: 400,
+			height: 600,
+		},
 	},
 ];
 
-function CreateWindow(strPageName, additionalOptions) {
+const OperationResponse = (msg) =>
+	Object({
+		result: 2,
+		message: msg,
+	});
+
+function CreateWindow(strPageName, pBounds, bDevtools) {
 	const pWindow = new CBrowserWindow(
 		Object.assign(
 			{
@@ -39,7 +64,7 @@ function CreateWindow(strPageName, additionalOptions) {
 					preload: path.join(__dirname, "preload.js"),
 				},
 			},
-			additionalOptions
+			pBounds
 		)
 	);
 
@@ -47,7 +72,7 @@ function CreateWindow(strPageName, additionalOptions) {
 	pWindow.once("ready-to-show", () => {
 		pWindow.show();
 
-		if (additionalOptions.devtools) {
+		if (bDevtools) {
 			pWindow.webContents.openDevTools();
 		}
 	});
@@ -56,6 +81,15 @@ function CreateWindow(strPageName, additionalOptions) {
 }
 
 (async () => {
+	const bDevtools = pApp.commandLine.hasSwitch("devtools");
+	let bLoadWindow = true;
+	let pSteamConnection;
+
+	function SkipWindow(wnd, msg) {
+		console.error('Skipping window "%s", reason: %s', wnd, msg);
+		bLoadWindow = false;
+	}
+
 	CAppMenu.setApplicationMenu(null);
 	pApp.disableHardwareAcceleration();
 	pApp.commandLine.appendSwitch("enable-transparent-visuals");
@@ -65,56 +99,84 @@ function CreateWindow(strPageName, additionalOptions) {
 	pApp.commandLine
 		.getSwitchValue("windows")
 		.split(",")
-		.forEach((w) => {
-			const pWindowBounds = k_pWindowSizes.find((e) => e.name == w);
+		.filter(Boolean)
+		.forEach(async (wnd) => {
+			// Window-specific things
+			bLoadWindow = true;
 
+			if (wnd == "player") {
+				// Waits for ready MPD connection on its own, so load it.
+			}
+
+			if (wnd == "procs") {
+				if (process.platform != "linux") {
+					SkipWindow(wnd, "not linux");
+				}
+			}
+
+			if (wnd == "steam") {
+				pSteamConnection = await CDP({
+					host: "127.0.0.1",
+					port: 8080,
+					target: (e) => e.find((e) => e.title == "SharedJSContext"),
+				}).catch((e) => {
+					SkipWindow(wnd, e.message);
+					// For no fucking reason it continues loading instead of skipping.
+					pApp.exit(1);
+				});
+			}
+			// end
+
+			const pWindowBounds = k_pWindowSizes.find((e) => e.name == wnd)?.bounds;
 			if (!pWindowBounds) {
-				console.error('no such window "%s"', w);
+				SkipWindow(wnd, 'no such window in "k_pWindowSizes"');
+			}
+
+			if (!bLoadWindow) {
 				return;
 			}
 
-			const [nWindowWidth, nWindowHeight] = pWindowBounds.size;
-			const pWindow = CreateWindow(w, {
-				x: nScreenWidth - k_nWindowMargin - nWindowWidth,
-				y: nScreenHeight - k_nWindowMargin - nWindowHeight,
-				width: nWindowWidth,
-				height: nWindowHeight,
-				devtools: pApp.commandLine.hasSwitch("devtools"),
-			});
-
-			pIPCMain.handle("get-bounds", () => {
-				return pWindow.getBounds();
-			});
-			pIPCMain.on("set-bounds", (_, args) => {
-				pWindow.setBounds(args);
-			});
-			pIPCMain.on("close-app", () => {
-				pApp.quit();
-			});
-			pIPCMain.handle("create-window", (ev, args) => {
-				return new Promise((resolve) => {
-					const pWindow = CreateWindow(args.page, args.options);
-
-					pWindow.once("ready-to-show", () => {
-						pWindow.webContents.postMessage("window-message", args.msg);
-
-						resolve(pWindow.id);
-					});
-				});
-			});
-			pIPCMain.on("close-window", (ev, args) => {
-				CBrowserWindow.fromId(args)?.close();
-			});
-			pIPCMain.on("send-message-to-parent", (ev, args) => {
-				if (ev.sender == pWindow.webContents) {
-					return;
-				}
-
-				pWindow.webContents.postMessage("window-message", args);
-			});
+			CreateWindow(wnd, pWindowBounds, bDevtools);
 		});
 
+	pIPCMain.handle("get-bounds", (ev) => {
+		return CBrowserWindow.fromWebContents(ev.sender).getBounds();
+	});
+	pIPCMain.on("set-bounds", (ev, args) => {
+		CBrowserWindow.fromWebContents(ev.sender).setBounds(args);
+	});
+	pIPCMain.on("set-intended-bounds", (ev, args) => {
+		CBrowserWindow.fromWebContents(ev.sender).setBounds(
+			k_pWindowSizes.find((e) => e.name == args)?.bounds
+		);
+	});
+
+	pIPCMain.handle("eval-steam-js", async (ev, args) => {
+		let data = await pSteamConnection.Runtime.evaluate({
+			expression: args,
+			awaitPromise: true,
+			returnByValue: true,
+		});
+
+		// TODO: for Unregisterable/callbacks maybe use consoleAPICalled ?
+		const value = data.result?.value;
+		if (!value) {
+			return OperationResponse(null);
+		}
+
+		if (
+			typeof value == "object" &&
+			!Array.isArray(value) &&
+			Object.keys(value).length == 0
+		) {
+			return OperationResponse("Empty object, possibly an ArrayBuffer");
+		}
+
+		return data.result?.value;
+	});
+
 	pApp.on("window-all-closed", () => {
+		pSteamConnection?.close();
 		pApp.quit();
 	});
 })();

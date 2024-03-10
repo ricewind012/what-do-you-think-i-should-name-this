@@ -1,0 +1,30 @@
+#proc-list-container {
+	--row-width-pid: 30px;
+	--row-width-cmd: 93px;
+
+	height: 100%;
+}
+
+#proc-list-header {
+	gap: 1ch;
+	padding: calc(var(--spacing) / 2) calc(var(--spacing) * 2);
+
+	display: flex;
+}
+
+#proc-list {
+	background-color: var(--bg);
+	padding: var(--spacing);
+
+	overflow: hidden scroll;
+	height: 100%;
+}
+
+.list-row-pid {
+	min-width: var(--row-width-pid);
+}
+
+.list-row-cmd {
+	min-width: var(--row-width-cmd);
+	max-width: var(--row-width-cmd);
+}

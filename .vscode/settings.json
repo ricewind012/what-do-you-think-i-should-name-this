@@ -1,0 +1,16 @@
+{
+	"files.associations": {
+		"bit": "cpp",
+		"compare": "cpp",
+		"condition_variable": "cpp",
+		"cstddef": "cpp",
+		"list": "cpp",
+		"string": "cpp",
+		"optional": "cpp",
+		"limits": "cpp",
+		"memory": "cpp",
+		"mutex": "cpp",
+		"new": "cpp",
+		"functional": "cpp"
+	}
+}

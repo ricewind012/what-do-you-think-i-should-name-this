@@ -1,4 +1,37 @@
-/*global id sleep CLog CLogTime electron*/
+/* global id sleep CLog CLogTime ResizeWindowForList */
+/* global electron fs path k_unUpdateInterval RenderProgress */
+
+const EMPDState = {
+	/** no information available */
+	Unknown: 0,
+
+	/** not playing */
+	Stopped: 1,
+
+	/** playing */
+	Playing: 2,
+
+	/** playing, but paused */
+	Paused: 3,
+};
+
+const EMPDSingleState = {
+	/** disabled */
+	Off: 0,
+
+	/** enabled */
+	On: 1,
+
+	/**
+	 * enables single state (#ONESHOT) for a single song, then
+	 * MPD disables single state (#OFF) if the current song
+	 * has played and there is another song in the current playlist
+	 */
+	Single: 2,
+
+	/** Unknown state */
+	Unknown: 3,
+};
 
 class CPlayerList {
 	constructor() {
@@ -50,7 +83,7 @@ class CPlayerList {
 					vecKeys
 						.map((m) => e.metadata[m]?.toLowerCase())
 						.join(" ")
-						.includes(strQuery.toLowerCase()) && i
+						.includes(strQuery.toLowerCase()) && i,
 			)
 			.filter(Boolean)
 			.forEach((e) => {
@@ -66,10 +99,10 @@ class CPlayerList {
 		this.m_pSearchLogger.TimeEnd();
 	}
 
-	GetTime(nSeconds) {
-		const nRemainder = nSeconds - (nSeconds % 60);
+	FormatTime(unSeconds) {
+		const unRemainder = unSeconds - (unSeconds % 60);
 
-		return `${nRemainder / 60}:${(nSeconds - nRemainder)
+		return `${unRemainder / 60}:${(unSeconds - unRemainder)
 			.toString()
 			.padStart(2, "0")}`;
 	}
@@ -83,7 +116,6 @@ class CPlayerList {
 		}
 
 		this.m_pRenderLogger.TimeStart();
-
 		this.m_vecSongs = electron.MPD.Database.GetSongList();
 		this.m_vecEntries = this.m_vecSongs.map((e, i) => {
 			const pSong = e;
@@ -98,7 +130,7 @@ class CPlayerList {
 
 			elEntryArtist.innerText = strArtist;
 			elEntryTitle.innerText = strTitle;
-			elEntryTime.innerText = this.GetTime(unTotal);
+			elEntryTime.innerText = this.FormatTime(unTotal);
 
 			elEntryContainer.addEventListener("click", () => {
 				electron.MPD.Controls.SetPlayPosition(i);
@@ -109,7 +141,6 @@ class CPlayerList {
 
 			return elEntryContainer;
 		});
-
 		this.m_pRenderLogger.TimeEnd();
 		this.m_bRendered = true;
 	}
@@ -127,17 +158,9 @@ class CPlayer {
 			const [vecFiles, pPattern] = electron.GetConfigAndPattern("mpd");
 
 			return electron
-				.ParseINI(vecFiles, pPattern)
-				.music_directory.replace("~", electron.env.HOME);
+				.ParseFile(vecFiles, pPattern)
+				.music_directory.replace("~", process.env.HOME);
 		})();
-	}
-
-	RenderProgress(nProgressValue) {
-		pElements.elProgress.value = nProgressValue;
-		pElements.elProgress.style.setProperty(
-			"--value",
-			nProgressValue * 100 + "%"
-		);
 	}
 
 	RenderMetadata() {
@@ -160,13 +183,13 @@ class CPlayer {
 		const strFilePath = this.m_pSong.file.split(sep).slice(0, -1).join(sep);
 
 		if (strFilePath.includes(".zip")) {
-			this.m_pLogger.Log("Current song is in an archive, no album art");
+			this.m_pLogger.Warn("Current song is in an archive, no album art");
 			this.SetAlbumArt(k_strEmptyImage);
 			return;
 		}
 
-		const vecImages = electron.fs
-			.readdirSync(electron.path.join(this.m_strMusicDir, strFilePath))
+		const vecImages = fs
+			.readdirSync(path.join(this.m_strMusicDir, strFilePath))
 			.filter((e) => k_vecImageFormats.some((f) => e.endsWith(f)));
 		const strCoverFile = vecImages.find((e) => e.startsWith("cover"));
 		const strAlbumArt = strCoverFile ? strCoverFile : vecImages[0];
@@ -175,8 +198,8 @@ class CPlayer {
 		this.m_pLogger.Assert(bExists, "No album cover?");
 		this.SetAlbumArt(
 			bExists
-				? electron.path.join(this.m_strMusicDir, strFilePath, strAlbumArt)
-				: k_strEmptyImage
+				? path.join(this.m_strMusicDir, strFilePath, strAlbumArt)
+				: k_strEmptyImage,
 		);
 	}
 
@@ -186,13 +209,13 @@ class CPlayer {
 			try {
 				this.m_pSong = electron.MPD.GetCurrentSong();
 			} catch (e) {
-				this.m_pLogger.Assert(this.m_pSong, e.message);
-				await sleep(k_nInterval);
+				this.m_pLogger.Error(e.message);
+				await sleep(k_unUpdateInterval);
 			}
 		}
 
 		const { unTimeElapsed, unTimeTotal } = this.m_pServerStatus;
-		this.RenderProgress(unTimeElapsed / unTimeTotal);
+		RenderProgress(pElements.elProgress, unTimeElapsed / unTimeTotal);
 		this.RenderMetadata();
 		this.RenderAlbumArt();
 	}
@@ -200,7 +223,7 @@ class CPlayer {
 	CheckAndRender() {
 		this.m_pServerStatus = electron.MPD.GetServerStatus();
 		const { eState } = this.m_pServerStatus;
-		if (eState == 0 || eState == 3) {
+		if (eState == EMPDState.Unknown || eState == EMPDState.Paused) {
 			return;
 		}
 
@@ -210,14 +233,12 @@ class CPlayer {
 
 const k_strEmptyImage = "data:image/gif;base64,R0lGODlhAQABADs7Ozs=";
 const k_vecImageFormats = ["avif", "bmp", "jpg", "jpeg", "png"];
-const k_nListHeight = 350;
-const k_nInterval = 2_500;
 
 let pElements = null;
 let pList = new CPlayerList();
 let pPlayer = new CPlayer();
 
-const sep = electron.path.sep;
+const sep = path.sep;
 
 window.addEventListener("keydown", (ev) => {
 	switch (ev.key) {
@@ -272,7 +293,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	pElements.elSearchInput.addEventListener("input", (ev) => {
 		// TODO: wtf
 		const strQuery = ev.target.value.replace(/^\//, "");
-
 		if (strQuery.length <= 2) {
 			return;
 		}
@@ -281,28 +301,19 @@ document.addEventListener("DOMContentLoaded", () => {
 	});
 
 	pElements.elAlbumArt.addEventListener("click", async () => {
-		const elList = pElements.elList;
-		const elListSearch = pElements.elListSearchContainer;
-		const bListHidden = elList.hidden && elListSearch.hidden;
-		const pBounds = await electron.Window.GetBounds();
-		pBounds.y -= k_nListHeight * (bListHidden ? 1 : -1);
-		pBounds.height += k_nListHeight * (bListHidden ? 1 : -1);
-
+		ResizeWindowForList();
 		pList.Render();
-		pList.SearchStop();
-		elList.hidden = !bListHidden;
-		electron.Window.SetBounds(pBounds);
 	});
 
 	pElements.elProgress.addEventListener("click", (ev) => {
 		const { eState } = pPlayer.m_pServerStatus;
-		if (eState == 0 || eState == 3) {
+		if (eState == EMPDState.Unknown || eState == EMPDState.Paused) {
 			return;
 		}
 
-		const nProgress = (ev.pageX - nContentMargin) / nProgressWidth;
-		electron.MPD.Controls.Seek(nProgress * pPlayer.m_pSong.time.unTotal);
-		pPlayer.RenderProgress(nProgress);
+		const flProgress = (ev.pageX - unContentMargin) / unProgressWidth;
+		electron.MPD.Controls.Seek(flProgress * pPlayer.m_pSong.time.unTotal);
+		RenderProgress(pElements.elProgress, flProgress);
 	});
 
 	pElements.elPrevious.addEventListener("click", () => {
@@ -314,8 +325,12 @@ document.addEventListener("DOMContentLoaded", () => {
 		const { eState } = pPlayer.m_pServerStatus;
 
 		electron.MPD.Controls.TogglePause();
-		pElements[eState == 3 ? "elTogglePause" : "elTogglePlay"].hidden = true;
-		pElements[eState == 3 ? "elTogglePlay" : "elTogglePause"].hidden = false;
+		pElements[
+			eState == EMPDState.Paused ? "elTogglePause" : "elTogglePlay"
+		].hidden = true;
+		pElements[
+			eState == EMPDState.Paused ? "elTogglePlay" : "elTogglePause"
+		].hidden = false;
 	});
 
 	pElements.elNext.addEventListener("click", () => {
@@ -323,16 +338,16 @@ document.addEventListener("DOMContentLoaded", () => {
 		pPlayer.Render();
 	});
 
-	const nContentMargin = getComputedStyle(document.documentElement)
+	const unContentMargin = getComputedStyle(document.documentElement)
 		.getPropertyValue("--spacing")
 		.match(/^\d+/)[0];
-	const nProgressWidth = getComputedStyle(pElements.elProgress).width.replace(
+	const unProgressWidth = getComputedStyle(pElements.elProgress).width.replace(
 		"px",
-		""
+		"",
 	);
 
 	pPlayer.CheckAndRender();
 	setInterval(() => {
 		pPlayer.CheckAndRender();
-	}, k_nInterval);
+	}, k_unUpdateInterval);
 });
