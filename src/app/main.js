@@ -11,7 +11,8 @@ const { Addon } = require("./shared");
 const X11 = Addon("X11");
 const [unScreenWidth, unScreenHeight] = X11.GetScreenSize();
 
-const k_pWindowSizes = [
+const k_EResult_Fail = 2;
+const k_vecWindowSizes = [
 	{
 		name: "player",
 		bounds: {
@@ -43,30 +44,26 @@ const k_pWindowSizes = [
 
 const OperationResponse = (msg) =>
 	Object({
-		result: 2,
+		result: k_EResult_Fail,
 		message: msg,
 	});
 
 function CreateWindow(strPageName, pBounds, bDevtools) {
-	const pWindow = new CBrowserWindow(
-		Object.assign(
-			{
-				autoHideMenuBar: true,
-				backgroundColor: "#00000000",
-				frame: false,
-				resizable: false,
-				transparent: true,
+	const pWindow = new CBrowserWindow({
+		...pBounds,
+		autoHideMenuBar: true,
+		backgroundColor: "#00000000",
+		frame: false,
+		resizable: false,
+		transparent: true,
 
-				show: false, // Try to prevent the white flash
-				skipTaskbar: true,
-				webPreferences: {
-					nodeIntegration: true,
-					preload: path.join(__dirname, "preload.js"),
-				},
-			},
-			pBounds
-		)
-	);
+		show: false, // Try to prevent the white flash
+		skipTaskbar: true,
+		webPreferences: {
+			nodeIntegration: true,
+			preload: path.join(__dirname, "preload.js"),
+		},
+	});
 
 	pWindow.loadFile(path.join("src", "ui", `${strPageName}.html`));
 	pWindow.once("ready-to-show", () => {
@@ -96,63 +93,62 @@ function CreateWindow(strPageName, pBounds, bDevtools) {
 
 	await pApp.whenReady();
 
-	pApp.commandLine
-		.getSwitchValue("windows")
-		.split(",")
-		.filter(Boolean)
-		.forEach(async (wnd) => {
-			// Window-specific things
-			bLoadWindow = true;
+	const vecWindows = pApp.commandLine.getSwitchValue("windows").split(",");
+	for (const wnd of vecWindows) {
+		bLoadWindow = true;
 
-			if (wnd == "player") {
-				// Waits for ready MPD connection on its own, so load it.
+		const pWindowBounds = k_vecWindowSizes.find((e) => e.name === wnd)?.bounds;
+		if (!pWindowBounds) {
+			SkipWindow(wnd, 'no such window in "k_vecWindowSizes"');
+		}
+
+		// Window-specific things
+		if (wnd === "player") {
+			// Waits for ready MPD connection on its own, so load it.
+		}
+
+		if (wnd === "procs") {
+			if (process.platform !== "linux") {
+				SkipWindow(wnd, "not linux");
 			}
+		}
 
-			if (wnd == "procs") {
-				if (process.platform != "linux") {
-					SkipWindow(wnd, "not linux");
-				}
-			}
+		if (wnd === "steam") {
+			pSteamConnection = await CDP({
+				host: "127.0.0.1",
+				port: 8080,
+				target: (e) => e.find((e) => e.title === "SharedJSContext"),
+			}).catch((e) => {
+				SkipWindow(wnd, e.message);
+				// For no fucking reason it continues loading instead of skipping.
+				pApp.exit(1);
+			});
+		}
+		// end
 
-			if (wnd == "steam") {
-				pSteamConnection = await CDP({
-					host: "127.0.0.1",
-					port: 8080,
-					target: (e) => e.find((e) => e.title == "SharedJSContext"),
-				}).catch((e) => {
-					SkipWindow(wnd, e.message);
-					// For no fucking reason it continues loading instead of skipping.
-					pApp.exit(1);
-				});
-			}
-			// end
+		if (!bLoadWindow) {
+			continue;
+		}
 
-			const pWindowBounds = k_pWindowSizes.find((e) => e.name == wnd)?.bounds;
-			if (!pWindowBounds) {
-				SkipWindow(wnd, 'no such window in "k_pWindowSizes"');
-			}
+		CreateWindow(wnd, pWindowBounds, bDevtools);
+	}
 
-			if (!bLoadWindow) {
-				return;
-			}
+	pIPCMain.on("set-bounds", (ev, args) => {
+		CBrowserWindow.fromWebContents(ev.sender).setBounds(args);
+	});
 
-			CreateWindow(wnd, pWindowBounds, bDevtools);
-		});
+	pIPCMain.on("set-intended-bounds", (ev, args) => {
+		CBrowserWindow.fromWebContents(ev.sender).setBounds(
+			k_vecWindowSizes.find((e) => e.name === args)?.bounds,
+		);
+	});
 
 	pIPCMain.handle("get-bounds", (ev) => {
 		return CBrowserWindow.fromWebContents(ev.sender).getBounds();
 	});
-	pIPCMain.on("set-bounds", (ev, args) => {
-		CBrowserWindow.fromWebContents(ev.sender).setBounds(args);
-	});
-	pIPCMain.on("set-intended-bounds", (ev, args) => {
-		CBrowserWindow.fromWebContents(ev.sender).setBounds(
-			k_pWindowSizes.find((e) => e.name == args)?.bounds
-		);
-	});
 
 	pIPCMain.handle("eval-steam-js", async (ev, args) => {
-		let data = await pSteamConnection.Runtime.evaluate({
+		const data = await pSteamConnection.Runtime.evaluate({
 			expression: args,
 			awaitPromise: true,
 			returnByValue: true,
@@ -165,9 +161,9 @@ function CreateWindow(strPageName, pBounds, bDevtools) {
 		}
 
 		if (
-			typeof value == "object" &&
+			typeof value === "object" &&
 			!Array.isArray(value) &&
-			Object.keys(value).length == 0
+			Object.keys(value).length === 0
 		) {
 			return OperationResponse("Empty object, possibly an ArrayBuffer");
 		}

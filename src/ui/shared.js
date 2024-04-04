@@ -68,7 +68,7 @@ function RenderList(elParent, fnCallback) {
 
 function RenderProgress(elProgress, flProgressValue) {
 	elProgress.value = flProgressValue;
-	elProgress.style.setProperty("--value", flProgressValue * 100 + "%");
+	elProgress.style.setProperty("--value", `${flProgressValue * 100}%`);
 }
 
 async function ResizeWindowForList() {
@@ -83,10 +83,11 @@ async function ResizeWindowForList() {
 	electron.Window.SetBounds(pBounds);
 }
 
-Object.keys(electron).forEach((e) => {
+for (const e of Object.keys(electron)) {
 	window[e] = electron[e];
-});
+}
 
+// TODO: GetWM
 setTimeout(() => {
 	electron.Window.SetIntendedBounds(location.href.match(/^.*\/(.*).html$/)[1]);
 }, 100);

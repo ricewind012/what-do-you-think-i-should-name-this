@@ -1,6 +1,3 @@
-/* global id sleep CLog CLogTime */
-/* global electron fs path k_unUpdateInterval */
-
 class CSteam {
 	constructor() {
 		this.m_pLogger = new CLog("CSteam");
@@ -9,50 +6,51 @@ class CSteam {
 
 	async RenderGames() {
 		const data = await HandleEvaluation(
-			"collectionStore.GetCollection('favorite').allApps"
+			"collectionStore.GetCollection('favorite').allApps",
 		).catch((e) => {
 			this.m_pLogger.Error(e.message);
 		});
 		const pTimeLogger = new CLogTime("Steam", "RenderGames()");
 
 		pTimeLogger.TimeStart();
-		data.forEach((e) => {
+		for (const i of data) {
 			const elEntry = pElements.elGameEntry.content.cloneNode(true);
 			const elEntryContainer = elEntry.children[0];
 			const [elEntryImage, elEntryTitle] = [...elEntryContainer.children];
 
-			elEntryContainer.ariaDisabled = e.installed;
+			elEntryContainer.ariaDisabled = i.installed;
 			elEntryImage.src = path.join(
 				this.m_strSteamPath,
 				"appcache",
 				"librarycache",
-				`${e.appid}_icon.jpg`
+				`${i.appid}_icon.jpg`,
 			);
-			elEntryTitle.innerText = e.display_name;
+			elEntryTitle.innerText = i.display_name;
 
 			elEntryContainer.addEventListener("click", async () => {
 				await electron.Steam.Evaluate(
-					`SteamClient.Apps.RunGame("${e.appid}", '', -1, 0)`
+					`SteamClient.Apps.RunGame("${i.appid}", '', -1, 0)`,
 				);
-				this.m_pLogger.Log("Running game %o", e.display_name);
+				this.m_pLogger.Log("Running game %o", i.display_name);
 			});
 
 			pElements.elFavorites.appendChild(elEntry);
-		});
+		}
 		pTimeLogger.TimeEnd();
 	}
 }
 
+const k_EResult_Fail = 2;
+
 let pElements = null;
-let pSteam = new CSteam();
+const pSteam = new CSteam();
 
 /**
  * Wrapper for `Steam.Evaluate`, since promises can not be used.
  */
 async function HandleEvaluation(strExpression) {
 	const data = await electron.Steam.Evaluate(strExpression);
-
-	if (data.result == 2) {
+	if (data.result === k_EResult_Fail) {
 		throw new Error(data.message);
 	}
 
@@ -62,8 +60,12 @@ async function HandleEvaluation(strExpression) {
 const GetRegistrarData = async (strRegistrar, unTimeout = 1_000) =>
 	await HandleEvaluation(`
 		_registrarData = undefined;
-		_hRegistrar = SteamClient.${strRegistrar}((e) => { window._registrarData = e; });
-		setTimeout(() => { _hRegistrar.unregister(); }, ${unTimeout});
+		_hRegistrar = SteamClient.${strRegistrar}((e) => {
+			window._registrarData = e;
+		});
+		setTimeout(() => {
+			_hRegistrar.unregister();
+		}, ${unTimeout});
 
 		_registrarData;
 	`);

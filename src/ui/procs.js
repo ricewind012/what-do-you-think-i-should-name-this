@@ -1,6 +1,3 @@
-/* global id sleep CLog CLogTime RenderList RenderProgress */
-/* global electron fs path k_unUpdateInterval */
-
 class CProcesses {
 	constructor() {
 		/** @type IProcess[] */
@@ -10,28 +7,28 @@ class CProcesses {
 	async Render() {
 		this.m_vecProcesses = electron.GetProcesses();
 		const elList = pElements.elList;
+		const vecSortedProcesses = this.m_vecProcesses.sort(
+			(a, b) => b.pid - a.pid,
+		);
 
 		elList.innerHTML = "";
-		this.m_vecProcesses
-			.sort((a, b) => b.pid - a.pid)
-			.forEach((e) => {
-				RenderList(pElements.elList, (container, children) => {
-					const [elEntryPID, elEntryCmd, elEntryArgs] = children;
+		for (const e of vecSortedProcesses) {
+			RenderList(pElements.elList, (container, children) => {
+				const [elEntryPID, elEntryCmd, elEntryArgs] = children;
+				const unPID = e.pid;
+				const vecArgs = e.args;
 
-					const unPID = e.pid;
-					const vecArgs = e.args;
+				elEntryPID.innerText = unPID;
+				elEntryCmd.innerText = e.cmd.split("/").splice(-1)[0];
+				elEntryArgs.innerText = vecArgs.join(" ");
+				elEntryArgs.title = vecArgs.join("\n");
 
-					elEntryPID.innerText = unPID;
-					elEntryCmd.innerText = e.cmd.split("/").splice(-1)[0];
-					elEntryArgs.innerText = vecArgs.join(" ");
-					elEntryArgs.title = vecArgs.join("\n");
-
-					container.addEventListener("dblclick", async () => {
-						process.kill(e.pid);
-						container.remove();
-					});
+				container.addEventListener("dblclick", async () => {
+					process.kill(e.pid);
+					container.remove();
 				});
 			});
+		}
 	}
 }
 

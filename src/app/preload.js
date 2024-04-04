@@ -18,9 +18,9 @@ const ReadFile = (strName) => fs.readFileSync(strName).toString();
 const ParseFile = (vecFiles, rPattern) =>
 	ReadFile(vecFiles.find((e) => fs.existsSync(e)))
 		.split("\n")
-		.filter((e) => e && e[0] != "#" && e[0] != "/")
+		.filter((e) => e && e[0] !== "#" && e[0] !== "/")
 		.map((e) => e.match(rPattern))
-		.filter((e) => e?.length == 3)
+		.filter((e) => e?.length === 3)
 		.map((e) => Object({ [e[1]]: e[2] }))
 		.reduce((a, b) => Object.assign(a, b));
 
@@ -30,10 +30,10 @@ const GetProcesses = () =>
 		.filter((e) => IsNumber(e))
 		.map((e) => [
 			e,
-			ReadFile("/proc/" + e + "/cmdline")
+			ReadFile(`/proc/${e}/cmdline`)
 				.replace(/\0/g, " ")
 				.match(/^([a-zA-Z-_/]+)\s+(.*) $/),
-			ParseFile(["/proc/" + e + "/status"], /(.*):\s+(.*)/),
+			ParseFile([`/proc/${e}/status`], /(.*):\s+(.*)/),
 		])
 		.filter((e) => e[1])
 		.map((e) =>
@@ -42,19 +42,17 @@ const GetProcesses = () =>
 				cmd: e[1][1],
 				args: e[1][2].split(/\s+/),
 				status: e[2],
-			})
+			}),
 		);
 
 function GetCommandArgument(vecArgs, strArgToFind) {
-	if (!vecArgs?.length) {
+	if (vecArgs?.length <= 0) {
 		return;
 	}
 
-	const vecMatches = vecArgs[0].match(
-		new RegExp("^(" + strArgToFind + ")=(.*)$")
-	);
+	const vecMatches = vecArgs[0].match(new RegExp(`^(${strArgToFind})=(.*)$`));
 
-	return vecMatches?.length == 3
+	return vecMatches?.length === 3
 		? vecMatches[2]
 		: vecArgs[vecArgs.indexOf(strArgToFind) + 1];
 }
@@ -62,7 +60,7 @@ function GetCommandArgument(vecArgs, strArgToFind) {
 function GetConfigAndPattern(strProgram) {
 	const strConfigDir =
 		process.env.XDG_CONFIG_HOME || path.join(process.env.HOME, ".config");
-	const vecProgramArgs = GetProcesses().find((e) => e.cmd == strProgram)?.args;
+	const vecProgramArgs = GetProcesses().find((e) => e.cmd === strProgram)?.args;
 
 	const XDGFile = (strEnding) =>
 		path.join(strConfigDir, strProgram, `${strProgram}${strEnding}`);
@@ -131,6 +129,12 @@ pContextBridge.exposeInMainWorld("electron", {
 		pIPCRenderer.send("send-message-to-parent", msg);
 	},
 
+	Steam: {
+		Evaluate(strJS) {
+			return pIPCRenderer.invoke("eval-steam-js", strJS);
+		},
+	},
+
 	Window: {
 		GetBounds() {
 			return pIPCRenderer.invoke("get-bounds");
@@ -142,13 +146,6 @@ pContextBridge.exposeInMainWorld("electron", {
 
 		SetIntendedBounds(strName) {
 			pIPCRenderer.send("set-intended-bounds", strName);
-		},
-	},
-
-	// Window-specific things
-	Steam: {
-		Evaluate(strJS) {
-			return pIPCRenderer.invoke("eval-steam-js", strJS);
 		},
 	},
 });

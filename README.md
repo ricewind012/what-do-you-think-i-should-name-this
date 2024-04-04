@@ -1,6 +1,6 @@
 ## Modules
 
-Building: `./build-modules` for all, `./build-modules <module>` for a specific one.
+Building: `./build_modules` for all, `./build_modules <module>` for a specific one.
 
 | Module | Dependency   |
 | ------ | ------------ |

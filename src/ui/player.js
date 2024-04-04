@@ -1,6 +1,3 @@
-/* global id sleep CLog CLogTime ResizeWindowForList */
-/* global electron fs path k_unUpdateInterval RenderProgress */
-
 const EMPDState = {
 	/** no information available */
 	Unknown: 0,
@@ -74,10 +71,9 @@ class CPlayerList {
 
 		this.m_pSearchLogger.TimeStart();
 
-		pElements.elListSearch.innerHTML = "";
 		// TODO: maybe only title
 		const vecKeys = Object.keys(this.m_vecSongs[0].metadata);
-		this.m_vecSongs
+		const vecResults = this.m_vecSongs
 			.map(
 				(e, i) =>
 					vecKeys
@@ -85,16 +81,18 @@ class CPlayerList {
 						.join(" ")
 						.includes(strQuery.toLowerCase()) && i,
 			)
-			.filter(Boolean)
-			.forEach((e) => {
-				const elEntryContainer = this.m_vecEntries[e].cloneNode(true);
+			.filter(Boolean);
 
-				pElements.elListSearch.appendChild(elEntryContainer);
-				elEntryContainer.addEventListener("click", () => {
-					electron.MPD.Controls.SetPlayPosition(e);
-					pList.Render();
-				});
+		pElements.elListSearch.innerHTML = "";
+		for (const i of vecResults) {
+			const elEntryContainer = this.m_vecEntries[i].cloneNode(true);
+
+			pElements.elListSearch.appendChild(elEntryContainer);
+			elEntryContainer.addEventListener("click", () => {
+				electron.MPD.Controls.SetPlayPosition(i);
+				pList.Render();
 			});
+		}
 
 		this.m_pSearchLogger.TimeEnd();
 	}
@@ -163,6 +161,11 @@ class CPlayer {
 		})();
 	}
 
+	// TODO: extract with ffmpeg api (i actually don't care now)
+	SetAlbumArt(strPath) {
+		pElements.elAlbumArt.src = strPath;
+	}
+
 	RenderMetadata() {
 		const pMetadata = this.m_pSong.metadata;
 		const strDate = pMetadata.strDate;
@@ -174,14 +177,8 @@ class CPlayer {
 			pMetadata.strTitle || this.m_pSong.file.split(sep).slice(-1).join(sep);
 	}
 
-	// TODO: extract with ffmpeg api (i actually don't care now)
-	SetAlbumArt(strPath) {
-		pElements.elAlbumArt.src = strPath;
-	}
-
 	RenderAlbumArt() {
 		const strFilePath = this.m_pSong.file.split(sep).slice(0, -1).join(sep);
-
 		if (strFilePath.includes(".zip")) {
 			this.m_pLogger.Warn("Current song is in an archive, no album art");
 			this.SetAlbumArt(k_strEmptyImage);
@@ -223,7 +220,7 @@ class CPlayer {
 	CheckAndRender() {
 		this.m_pServerStatus = electron.MPD.GetServerStatus();
 		const { eState } = this.m_pServerStatus;
-		if (eState == EMPDState.Unknown || eState == EMPDState.Paused) {
+		if (eState === EMPDState.Unknown || eState === EMPDState.Paused) {
 			return;
 		}
 
@@ -234,9 +231,9 @@ class CPlayer {
 const k_strEmptyImage = "data:image/gif;base64,R0lGODlhAQABADs7Ozs=";
 const k_vecImageFormats = ["avif", "bmp", "jpg", "jpeg", "png"];
 
-let pElements = null;
-let pList = new CPlayerList();
-let pPlayer = new CPlayer();
+let pElements = {};
+const pList = new CPlayerList();
+const pPlayer = new CPlayer();
 
 const sep = path.sep;
 
@@ -300,14 +297,14 @@ document.addEventListener("DOMContentLoaded", () => {
 		pList.Search(strQuery);
 	});
 
-	pElements.elAlbumArt.addEventListener("click", async () => {
+	pElements.elAlbumArt.addEventListener("click", () => {
 		ResizeWindowForList();
 		pList.Render();
 	});
 
 	pElements.elProgress.addEventListener("click", (ev) => {
 		const { eState } = pPlayer.m_pServerStatus;
-		if (eState == EMPDState.Unknown || eState == EMPDState.Paused) {
+		if (eState === EMPDState.Unknown || eState === EMPDState.Paused) {
 			return;
 		}
 
@@ -325,12 +322,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		const { eState } = pPlayer.m_pServerStatus;
 
 		electron.MPD.Controls.TogglePause();
-		pElements[
-			eState == EMPDState.Paused ? "elTogglePause" : "elTogglePlay"
-		].hidden = true;
-		pElements[
-			eState == EMPDState.Paused ? "elTogglePlay" : "elTogglePause"
-		].hidden = false;
+		pElements.elTogglePause.hidden = eState !== EMPDState.Paused;
+		pElements.elTogglePlay.hidden = eState === EMPDState.Paused;
 	});
 
 	pElements.elNext.addEventListener("click", () => {

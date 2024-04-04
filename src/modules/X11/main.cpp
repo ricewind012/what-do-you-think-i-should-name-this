@@ -1,5 +1,3 @@
-#include <vector>
-
 #include <xcb/xcb.h>
 
 #include "../shared/shared.h"
