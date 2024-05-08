@@ -5,6 +5,7 @@ const {
 
 const fs = require("node:fs");
 const path = require("node:path");
+const cdp = require("chrome-remote-interface");
 const { Addon, IsNumber } = require("./shared");
 
 const MPD = Addon("MPD");
@@ -105,6 +106,7 @@ pIPCRenderer.on("window-message", (ev, args) => {
 });
 
 pContextBridge.exposeInMainWorld("electron", {
+	cdp,
 	fs,
 	path,
 
@@ -127,12 +129,6 @@ pContextBridge.exposeInMainWorld("electron", {
 
 	SendMesssageToParent(msg) {
 		pIPCRenderer.send("send-message-to-parent", msg);
-	},
-
-	Steam: {
-		Evaluate(strJS) {
-			return pIPCRenderer.invoke("eval-steam-js", strJS);
-		},
 	},
 
 	Window: {

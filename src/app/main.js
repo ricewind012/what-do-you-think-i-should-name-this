@@ -4,14 +4,13 @@ const {
 	ipcMain: pIPCMain,
 	Menu: CAppMenu,
 } = require("electron");
-const CDP = require("chrome-remote-interface");
+const fs = require("node:fs");
 const path = require("node:path");
 const { Addon } = require("./shared");
 
 const X11 = Addon("X11");
 const [unScreenWidth, unScreenHeight] = X11.GetScreenSize();
 
-const k_EResult_Fail = 2;
 const k_vecWindowSizes = [
 	{
 		name: "player",
@@ -42,11 +41,9 @@ const k_vecWindowSizes = [
 	},
 ];
 
-const OperationResponse = (msg) =>
-	Object({
-		result: k_EResult_Fail,
-		message: msg,
-	});
+const vecPaths = process.env.PATH.split(":");
+const BIsInstalled = (strProgram) =>
+	!!vecPaths.find((e) => fs.existsSync(path.join(e, "steam")));
 
 function CreateWindow(strPageName, pBounds, bDevtools) {
 	const pWindow = new CBrowserWindow({
@@ -80,7 +77,6 @@ function CreateWindow(strPageName, pBounds, bDevtools) {
 (async () => {
 	const bDevtools = pApp.commandLine.hasSwitch("devtools");
 	let bLoadWindow = true;
-	let pSteamConnection;
 
 	function SkipWindow(wnd, msg) {
 		console.error('Skipping window "%s", reason: %s', wnd, msg);
@@ -104,7 +100,9 @@ function CreateWindow(strPageName, pBounds, bDevtools) {
 
 		// Window-specific things
 		if (wnd === "player") {
-			// Waits for ready MPD connection on its own, so load it.
+			if (!BIsInstalled("mpd")) {
+				SkipWindow(wnd, "mpd is not installed");
+			}
 		}
 
 		if (wnd === "procs") {
@@ -114,15 +112,9 @@ function CreateWindow(strPageName, pBounds, bDevtools) {
 		}
 
 		if (wnd === "steam") {
-			pSteamConnection = await CDP({
-				host: "127.0.0.1",
-				port: 8080,
-				target: (e) => e.find((e) => e.title === "SharedJSContext"),
-			}).catch((e) => {
-				SkipWindow(wnd, e.message);
-				// For no fucking reason it continues loading instead of skipping.
-				pApp.exit(1);
-			});
+			if (!BIsInstalled("steam")) {
+				SkipWindow(wnd, "steam is not installed");
+			}
 		}
 		// end
 
@@ -147,32 +139,7 @@ function CreateWindow(strPageName, pBounds, bDevtools) {
 		return CBrowserWindow.fromWebContents(ev.sender).getBounds();
 	});
 
-	pIPCMain.handle("eval-steam-js", async (ev, args) => {
-		const data = await pSteamConnection.Runtime.evaluate({
-			expression: args,
-			awaitPromise: true,
-			returnByValue: true,
-		});
-
-		// TODO: for Unregisterable/callbacks maybe use consoleAPICalled ?
-		const value = data.result?.value;
-		if (!value) {
-			return OperationResponse(null);
-		}
-
-		if (
-			typeof value === "object" &&
-			!Array.isArray(value) &&
-			Object.keys(value).length === 0
-		) {
-			return OperationResponse("Empty object, possibly an ArrayBuffer");
-		}
-
-		return data.result?.value;
-	});
-
 	pApp.on("window-all-closed", () => {
-		pSteamConnection?.close();
 		pApp.quit();
 	});
 })();
