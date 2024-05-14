@@ -42,8 +42,8 @@ const k_vecWindowSizes = [
 ];
 
 const vecPaths = process.env.PATH.split(":");
-const BIsInstalled = (strProgram) =>
-	!!vecPaths.find((e) => fs.existsSync(path.join(e, "steam")));
+const IsAppInstalled = (strProgram) =>
+	vecPaths.some((e) => fs.existsSync(path.join(e, strProgram)));
 
 function CreateWindow(strPageName, pBounds, bDevtools) {
 	const pWindow = new CBrowserWindow({
@@ -75,9 +75,6 @@ function CreateWindow(strPageName, pBounds, bDevtools) {
 }
 
 (async () => {
-	const bDevtools = pApp.commandLine.hasSwitch("devtools");
-	let bLoadWindow = true;
-
 	function SkipWindow(wnd, msg) {
 		console.error('Skipping window "%s", reason: %s', wnd, msg);
 		bLoadWindow = false;
@@ -87,9 +84,16 @@ function CreateWindow(strPageName, pBounds, bDevtools) {
 	pApp.disableHardwareAcceleration();
 	pApp.commandLine.appendSwitch("enable-transparent-visuals");
 
+	const bDevtools = pApp.commandLine.hasSwitch("devtools");
+	const strWindowsSwitch = pApp.commandLine.getSwitchValue("windows");
+	if (strWindowsSwitch === "") {
+		console.error("--windows option is not present");
+		pApp.exit(2);
+	}
+
 	await pApp.whenReady();
 
-	const vecWindows = pApp.commandLine.getSwitchValue("windows").split(",");
+	const vecWindows = strWindowsSwitch.split(",").filter(Boolean);
 	for (const wnd of vecWindows) {
 		bLoadWindow = true;
 
@@ -100,7 +104,7 @@ function CreateWindow(strPageName, pBounds, bDevtools) {
 
 		// Window-specific things
 		if (wnd === "player") {
-			if (!BIsInstalled("mpd")) {
+			if (!IsAppInstalled("mpd")) {
 				SkipWindow(wnd, "mpd is not installed");
 			}
 		}
@@ -112,7 +116,7 @@ function CreateWindow(strPageName, pBounds, bDevtools) {
 		}
 
 		if (wnd === "steam") {
-			if (!BIsInstalled("steam")) {
+			if (!IsAppInstalled("steam")) {
 				SkipWindow(wnd, "steam is not installed");
 			}
 		}
@@ -123,6 +127,11 @@ function CreateWindow(strPageName, pBounds, bDevtools) {
 		}
 
 		CreateWindow(wnd, pWindowBounds, bDevtools);
+	}
+
+	if (CBrowserWindow.getAllWindows().length === 0) {
+		console.error("--windows option is present, but no windows loaded");
+		pApp.exit(1);
 	}
 
 	pIPCMain.on("set-bounds", (ev, args) => {

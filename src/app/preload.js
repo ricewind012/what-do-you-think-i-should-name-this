@@ -63,42 +63,40 @@ function GetConfigAndPattern(strProgram) {
 		process.env.XDG_CONFIG_HOME || path.join(process.env.HOME, ".config");
 	const vecProgramArgs = GetProcesses().find((e) => e.cmd === strProgram)?.args;
 
-	const XDGFile = (strEnding) =>
+	const GetXDGFile = (strEnding) =>
 		path.join(strConfigDir, strProgram, `${strProgram}${strEnding}`);
 
-	return (() => {
-		switch (strProgram) {
-			case "dunst":
-				return [
-					[
-						GetCommandArgument(vecProgramArgs, "-conf"),
-						GetCommandArgument(vecProgramArgs, "-config"),
-						XDGFile("rc"),
-					],
-					/^([^=\s]+)(?:[=\s]+)?"(.*)"$/,
-				];
-			case "mpd":
-				return [
-					[
-						process.env.CONF_FILE,
-						XDGFile(".conf"),
-						path.join(process.env.HOME, ".mpdconf"),
-						path.join(process.env.HOME, ".mpd", "mpd.conf"),
-					],
-					/^([^=\s]+)(?:[=\s]+)?"(.*)"$/,
-				];
-			case "tint2":
-				return [
-					[GetCommandArgument(vecProgramArgs, "-c"), XDGFile(strProgram, "rc")],
-					/^([^=\s]+)(?:[=\s]+)?(.*)$/,
-				];
-			case "picom":
-				return [
-					[GetCommandArgument(vecProgramArgs, "--config"), XDGFile(".conf")],
-					/^(\w[^=\s]+)(?:[=\s]+)?"?(.*)"?;$/,
-				];
-		}
-	})();
+	switch (strProgram) {
+		case "dunst":
+			return [
+				[
+					GetCommandArgument(vecProgramArgs, "-conf"),
+					GetCommandArgument(vecProgramArgs, "-config"),
+					GetXDGFile("rc"),
+				],
+				/^([^=\s]+)(?:[=\s]+)?"(.*)"$/,
+			];
+		case "mpd":
+			return [
+				[
+					process.env.CONF_FILE,
+					GetXDGFile(".conf"),
+					path.join(process.env.HOME, ".mpdconf"),
+					path.join(process.env.HOME, ".mpd", "mpd.conf"),
+				],
+				/^([^=\s]+)(?:[=\s]+)?"(.*)"$/,
+			];
+		case "tint2":
+			return [
+				[GetCommandArgument(vecProgramArgs, "-c"), GetXDGFile("rc")],
+				/^([^=\s]+)(?:[=\s]+)?(.*)$/,
+			];
+		case "picom":
+			return [
+				[GetCommandArgument(vecProgramArgs, "--config"), GetXDGFile(".conf")],
+				/^(\w[^=\s]+)(?:[=\s]+)?"?(.*)"?;$/,
+			];
+	}
 }
 
 pIPCRenderer.on("window-message", (ev, args) => {
