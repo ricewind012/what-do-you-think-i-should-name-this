@@ -240,7 +240,9 @@ li {
 		background-color: var(--bg);
 	}
 
-	&[aria-disabled] {
+	&[aria-disabled="true"] {
+		color: var(--fg-2);
+
 		pointer-events: none;
 	}
 }

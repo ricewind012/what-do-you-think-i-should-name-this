@@ -20,12 +20,6 @@ class CChromeRemoteInterfaceHelper {
 			returnByValue: true,
 		});
 
-		// TODO: for Unregisterable/callbacks maybe use consoleAPICalled ?
-		const value = data.result?.value;
-		if (!value) {
-			return OperationResponse(null);
-		}
-
 		if (
 			typeof value === "object" &&
 			!Array.isArray(value) &&
@@ -70,39 +64,109 @@ class CSteam {
 		this.m_strSteamPath = path.join(process.env.HOME, ".steam", "steam");
 	}
 
-	async RenderGames() {
-		const data = await pChromeRemoteInterfaceHelper
-			.HandleEvaluation("collectionStore.GetCollection('favorite').allApps")
+	async HandleEvaluation(strJS) {
+		return await pChromeRemoteInterfaceHelper
+			.HandleEvaluation(strJS)
 			.catch((e) => {
 				this.m_pLogger.Error(e.message);
 			});
+	}
+
+	async RenderGames() {
+		// Some data (getters ?) is lost on evaluation, hence the .map
+		const data = await this.HandleEvaluation(
+			`collectionStore.GetCollection('favorite').allApps
+				.map((e) => [e, e.display_name, e.installed]);
+			`,
+		);
 		const pTimeLogger = new CLogTime("Steam", "RenderGames()");
 
 		pTimeLogger.TimeStart();
-		for (const i of data) {
-			const elEntry = pElements.elGameEntry.content.cloneNode(true);
+		for (const [i, strGameName, bGameIntalled] of data) {
+			const elEntry = pElements.elListEntry.content.cloneNode(true);
 			const elEntryContainer = elEntry.children[0];
 			const [elEntryImage, elEntryTitle] = [...elEntryContainer.children];
 
-			elEntryContainer.ariaDisabled = i.installed;
-			elEntryImage.src = path.join(
-				this.m_strSteamPath,
-				"appcache",
-				"librarycache",
-				`${i.appid}_icon.jpg`,
-			);
-			elEntryTitle.innerText = i.display_name;
+			elEntryContainer.ariaDisabled = !bGameIntalled;
+			elEntryImage.src = i.icon_data
+				? `data:image/${i.icon_data_format};base64,${i.icon_data}`
+				: path.join(
+						this.m_strSteamPath,
+						"appcache",
+						"librarycache",
+						`${i.appid}_icon.jpg`,
+					);
+			elEntryTitle.innerText = strGameName;
 
 			elEntryContainer.addEventListener("click", async () => {
 				await pChromeRemoteInterfaceHelper.Evaluate(
 					`SteamClient.Apps.RunGame("${i.appid}", '', -1, 0)`,
 				);
-				this.m_pLogger.Log("Running game %o", i.display_name);
+				this.m_pLogger.Log("Running game %o", strGameName);
 			});
 
-			pElements.elFavorites.appendChild(elEntry);
+			pElements.elGames.appendChild(elEntry);
 		}
 		pTimeLogger.TimeEnd();
+	}
+
+	async RenderServers() {
+		const pTimeLogger = new CLogTime("Steam", "RenderServers()");
+		pTimeLogger.TimeStart();
+
+		await pSteam.WaitForServerListRequest();
+		const vecServers = await this.HandleEvaluation(
+			"window._vecFavoriteServers",
+		);
+
+		for (const pServer of vecServers) {
+			const elEntry = pElements.elListEntry.content.cloneNode(true);
+			const elEntryContainer = elEntry.children[0];
+			const [elEntryImage, elEntryTitle, elEntryDetails] = [
+				...elEntryContainer.children,
+			];
+
+			elEntryContainer.ariaDisabled = pServer.players === 0;
+			elEntryTitle.innerText = pServer.name;
+			elEntryDetails.innerText = `${pServer.players}/${pServer.maxPlayers}`;
+
+			elEntryContainer.addEventListener("click", async () => {
+				await pChromeRemoteInterfaceHelper.Evaluate(
+					`SteamClient.ServerBrowser.CreateServerGameInfoDialog(
+						'${pServer.ip}', ${pServer.port}, ${pServer.queryPort}
+					);`,
+				);
+				this.m_pLogger.Log("Opening dialog for %o", pServer.name);
+			});
+
+			pElements.elServers.appendChild(elEntry);
+		}
+		pTimeLogger.TimeEnd();
+	}
+
+	async WaitForServerListRequest() {
+		await pChromeRemoteInterfaceHelper.Evaluate(`
+			window._vecFavoriteServers = [];
+			window._eRequestCompleted = undefined;
+
+			SteamClient.ServerBrowser.CreateServerListRequest(
+				440,
+				'favorites',
+				['gamedir', 'tf'],
+				(e) => {
+					window._vecFavoriteServers.push(e);
+				},
+				(e) => {
+					window._eRequestCompleted = e;
+				},
+			);
+		`);
+
+		while (
+			!(await pChromeRemoteInterfaceHelper.Evaluate(
+				"window._eRequestCompleted !== undefined",
+			))
+		);
 	}
 }
 
@@ -119,8 +183,9 @@ const pSteam = new CSteam();
 
 document.addEventListener("DOMContentLoaded", async () => {
 	pElements = {
-		elFavorites: id("steam-favorites"),
-		elGameEntry: id("steam-game-entry"),
+		elGames: id("steam-games"),
+		elServers: id("steam-servers"),
+		elListEntry: id("steam-list-entry"),
 	};
 
 	let pConnection = await CChromeRemoteInterfaceHelper.GetConnection();
@@ -131,4 +196,5 @@ document.addEventListener("DOMContentLoaded", async () => {
 	pChromeRemoteInterfaceHelper = new CChromeRemoteInterfaceHelper(pConnection);
 
 	pSteam.RenderGames();
+	pSteam.RenderServers();
 });
