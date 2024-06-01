@@ -1,6 +1,6 @@
 #include <mpd/client.h>
 
-#include "shared.h"
+#include "../shared/shared.h"
 
 Local<Object>
 DescribeSong(const mpd_song* pSong);

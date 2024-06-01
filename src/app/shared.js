@@ -1,11 +1,12 @@
-const path = require("node:path");
+import path from "node:path";
+import { createRequire } from "node:module";
 
+// why do I have to put main.js there ?
 const Addon = (p) =>
-	require(
-		path.join(__dirname, "..", "modules", p, "build", "Release", "addon"),
+	createRequire(path.join(process.cwd(), "src", "app", "main.js"))(
+		path.join("..", "modules", p, "build", "Release", "addon"),
 	);
 
 const IsNumber = (n) => Number.isFinite(Number(n));
 
-exports.Addon = Addon;
-exports.IsNumber = IsNumber;
+export { Addon, IsNumber };

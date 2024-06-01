@@ -1,19 +1,17 @@
 #include <mpd/client.h>
 
-#include "Controls.h"
-#include "Database.h"
-#include "GetCurrentSong.h"
-#include "GetServerStatus.h"
-#include "GetSettings.h"
+#include "controls.h"
+#include "current_song.h"
+#include "db.h"
+#include "server_status.h"
+#include "settings.h"
 
 #define SET_OBJECT(NAME)                                                       \
 	exports->Set(context, TO_STRING(#NAME), NAME()).FromJust()
 
-extern "C" NODE_MODULE_EXPORT void
-NODE_MODULE_INITIALIZER(Local<Object> exports, Local<Object> module)
+NODE_MODULE_INIT()
 {
 	auto pIsolate = exports->GetIsolate();
-	auto context = pIsolate->GetCurrentContext();
 
 	SET_OBJECT(Controls);
 	SET_OBJECT(Database);

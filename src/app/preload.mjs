@@ -1,12 +1,11 @@
-const {
-	contextBridge: pContextBridge,
-	ipcRenderer: pIPCRenderer,
-} = require("electron");
-
-const fs = require("node:fs");
-const path = require("node:path");
-const cdp = require("chrome-remote-interface");
-const { Addon, IsNumber } = require("./shared");
+import {
+	contextBridge as pContextBridge,
+	ipcRenderer as pIPCRenderer,
+} from "electron";
+import fs from "node:fs";
+import path from "node:path";
+import cdp from "chrome-remote-interface";
+import { Addon, IsNumber } from "./shared.js";
 
 const MPD = Addon("MPD");
 const X11 = Addon("X11");

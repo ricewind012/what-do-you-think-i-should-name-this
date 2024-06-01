@@ -1,12 +1,12 @@
-const {
-	app: pApp,
-	BrowserWindow: CBrowserWindow,
-	ipcMain: pIPCMain,
-	Menu: CAppMenu,
-} = require("electron");
-const fs = require("node:fs");
-const path = require("node:path");
-const { Addon } = require("./shared");
+import {
+	app as pApp,
+	BrowserWindow as CBrowserWindow,
+	ipcMain as pIPCMain,
+	Menu as CAppMenu,
+} from "electron";
+import fs from "node:fs";
+import path from "node:path";
+import { Addon } from "./shared.js";
 
 const X11 = Addon("X11");
 const [unScreenWidth, unScreenHeight] = X11.GetScreenSize();
@@ -58,7 +58,7 @@ function CreateWindow(strPageName, pBounds, bDevtools) {
 		skipTaskbar: true,
 		webPreferences: {
 			nodeIntegration: true,
-			preload: path.join(__dirname, "preload.js"),
+			preload: path.join(process.cwd(), "src", "app", "preload.mjs"),
 		},
 	});
 
@@ -75,6 +75,8 @@ function CreateWindow(strPageName, pBounds, bDevtools) {
 }
 
 (async () => {
+	let bLoadWindow;
+
 	function SkipWindow(wnd, msg) {
 		console.error('Skipping window "%s", reason: %s', wnd, msg);
 		bLoadWindow = false;

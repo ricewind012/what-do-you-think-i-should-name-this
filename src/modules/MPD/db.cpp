@@ -1,4 +1,4 @@
-#include "../shared/mpd.h"
+#include "mpd_shared.h"
 
 void
 GetSongList(const FunctionCallbackInfo<Value>& args)

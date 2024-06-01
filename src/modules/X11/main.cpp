@@ -36,8 +36,7 @@ GetScreenSize(const FunctionCallbackInfo<Value>& args)
 	xcb_disconnect(pConnection);
 }
 
-extern "C" NODE_MODULE_EXPORT void
-NODE_MODULE_INITIALIZER(Local<Object> exports, Local<Object> module)
+NODE_MODULE_INIT()
 {
 	NODE_SET_METHOD(exports, "GetScreenSize", GetScreenSize);
 }

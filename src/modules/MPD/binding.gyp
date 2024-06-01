@@ -8,12 +8,12 @@
 			],
 			"sources": [
 				"../shared/shared.cpp",
-				"../shared/mpd.cpp",
-				"Controls.cpp",
-				"Database.cpp",
-				"GetCurrentSong.cpp",
-				"GetServerStatus.cpp",
-				"GetSettings.cpp",
+				"mpd_shared.cpp",
+				"controls.cpp",
+				"current_song.cpp",
+				"db.cpp",
+				"server_status.cpp",
+				"settings.cpp",
 				"main.cpp",
 			],
 			"libraries": [
