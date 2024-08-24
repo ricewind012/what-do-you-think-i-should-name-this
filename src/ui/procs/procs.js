@@ -1,6 +1,8 @@
+import { id, RenderProgress } from "../shared.js";
+
 class CProcesses {
 	constructor() {
-		/** @type IProcess[] */
+		/** @type {import("../../../types/preload").IProcess[]} */
 		this.m_vecProcesses = [];
 	}
 
@@ -12,22 +14,26 @@ class CProcesses {
 		);
 
 		elList.innerHTML = "";
-		for (const e of vecSortedProcesses) {
-			RenderList(pElements.elList, (container, children) => {
-				const [elEntryPID, elEntryCmd, elEntryArgs] = children;
-				const unPID = e.pid;
-				const vecArgs = e.args;
+		for (const proc of vecSortedProcesses) {
+			const elEntry = pElements.elEntry.content.cloneNode(true);
+			const elEntryContainer = elEntry.children[0];
 
-				elEntryPID.innerText = unPID;
-				elEntryCmd.innerText = e.cmd.split("/").splice(-1)[0];
-				elEntryArgs.innerText = vecArgs.join(" ");
-				elEntryArgs.title = vecArgs.join("\n");
+			const [elEntryPID, elEntryCmd, elEntryArgs] = [
+				...elEntryContainer.children,
+			];
+			const { pid: unPID, args: vecArgs } = proc;
 
-				container.addEventListener("dblclick", async () => {
-					process.kill(e.pid);
-					container.remove();
-				});
+			elEntryPID.innerText = unPID;
+			elEntryCmd.innerText = proc.cmd.split("/").splice(-1)[0];
+			elEntryArgs.innerText = vecArgs.join(" ");
+			elEntryArgs.title = vecArgs.join("\n");
+
+			elEntryContainer.addEventListener("dblclick", async () => {
+				process.kill(proc.pid);
+				container.remove();
 			});
+
+			pElements.elList.appendChild(elEntry);
 		}
 	}
 }

@@ -21,7 +21,7 @@ const ParseFile = (vecFiles, rPattern) =>
 		.filter((e) => e && e[0] !== "#" && e[0] !== "/")
 		.map((e) => e.match(rPattern))
 		.filter((e) => e?.length === 3)
-		.map((e) => Object({ [e[1]]: e[2] }))
+		.map((e) => ({ [e[1]]: e[2] }))
 		.reduce((a, b) => Object.assign(a, b));
 
 const GetProcesses = () =>
@@ -36,14 +36,12 @@ const GetProcesses = () =>
 			ParseFile([`/proc/${e}/status`], /(.*):\s+(.*)/),
 		])
 		.filter((e) => e[1])
-		.map((e) =>
-			Object({
-				pid: e[0],
-				cmd: e[1][1],
-				args: e[1][2].split(/\s+/),
-				status: e[2],
-			}),
-		);
+		.map((e) => ({
+			pid: e[0],
+			cmd: e[1][1],
+			args: e[1][2].split(/\s+/),
+			status: e[2],
+		}));
 
 function GetCommandArgument(vecArgs, strArgToFind) {
 	if (vecArgs?.length <= 0) {

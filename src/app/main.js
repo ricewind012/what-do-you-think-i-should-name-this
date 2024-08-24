@@ -9,7 +9,9 @@ import path from "node:path";
 import { Addon } from "./shared.js";
 
 const X11 = Addon("X11");
+const cwd = process.cwd();
 const [unScreenWidth, unScreenHeight] = X11.GetScreenSize();
+const vecSplitPath = process.env.PATH.split(":");
 
 const k_vecWindowSizes = [
 	{
@@ -41,9 +43,8 @@ const k_vecWindowSizes = [
 	},
 ];
 
-const vecPaths = process.env.PATH.split(":");
-const IsAppInstalled = (strProgram) =>
-	vecPaths.some((e) => fs.existsSync(path.join(e, strProgram)));
+const IsAppInstalled = (strName) =>
+	vecSplitPath.some((e) => fs.existsSync(path.join(e, strName)));
 
 function CreateWindow(strPageName, pBounds, bDevtools) {
 	const pWindow = new CBrowserWindow({
@@ -58,11 +59,11 @@ function CreateWindow(strPageName, pBounds, bDevtools) {
 		skipTaskbar: true,
 		webPreferences: {
 			nodeIntegration: true,
-			preload: path.join(process.cwd(), "src", "app", "preload.mjs"),
+			preload: path.join(cwd, "src", "app", "preload.mjs"),
 		},
 	});
 
-	pWindow.loadFile(path.join("src", "ui", `${strPageName}.html`));
+	pWindow.loadFile(path.join("src", "ui", strPageName, `${strPageName}.html`));
 	pWindow.once("ready-to-show", () => {
 		pWindow.show();
 
@@ -78,7 +79,7 @@ function CreateWindow(strPageName, pBounds, bDevtools) {
 	let bLoadWindow;
 
 	function SkipWindow(wnd, msg) {
-		console.error('Skipping window "%s", reason: %s', wnd, msg);
+		console.error("Skipping window %o, reason: %s", wnd, msg);
 		bLoadWindow = false;
 	}
 

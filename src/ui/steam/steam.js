@@ -1,3 +1,5 @@
+import { id, sleep, CLog, CLogTime } from "../shared.js";
+
 class CChromeRemoteInterfaceHelper {
 	constructor(pConnection) {
 		/** @type {import("@types/chrome-remote-interface").Client')} */
@@ -13,9 +15,9 @@ class CChromeRemoteInterfaceHelper {
 		});
 	}
 
-	async Evaluate(strJS) {
+	async Evaluate(expression) {
 		const data = await this.m_pConnection.Runtime.evaluate({
-			expression: strJS,
+			expression,
 			awaitPromise: true,
 			returnByValue: true,
 		});
@@ -48,8 +50,8 @@ class CChromeRemoteInterfaceHelper {
 	/**
 	 * Wrapper for {@link Evaluate}, since promises can not be used.
 	 */
-	async HandleEvaluation(strJS) {
-		const data = await this.Evaluate(strJS);
+	async HandleEvaluation(expression) {
+		const data = await this.Evaluate(expression);
 		if (data.result === k_EResult_Fail) {
 			throw new Error(data.message);
 		}
@@ -64,9 +66,9 @@ class CSteam {
 		this.m_strSteamPath = path.join(process.env.HOME, ".steam", "steam");
 	}
 
-	async HandleEvaluation(strJS) {
+	async HandleEvaluation(expression) {
 		return await pChromeRemoteInterfaceHelper
-			.HandleEvaluation(strJS)
+			.HandleEvaluation(expression)
 			.catch((e) => {
 				this.m_pLogger.Error(e.message);
 			});
@@ -74,11 +76,11 @@ class CSteam {
 
 	async RenderGames() {
 		// Some data (getters ?) is lost on evaluation, hence the .map
-		const data = await this.HandleEvaluation(
-			`collectionStore.GetCollection('favorite').allApps
-				.map((e) => [e, e.display_name, e.installed]);
-			`,
-		);
+		const data = await this.HandleEvaluation(`
+			collectionStore
+				.GetCollection("favorite")
+				.allApps.map((e) => [e, e.display_name, e.installed]);
+		`);
 		const pTimeLogger = new CLogTime("Steam", "RenderGames()");
 
 		pTimeLogger.TimeStart();
@@ -171,11 +173,10 @@ class CSteam {
 }
 
 const k_EResult_Fail = 2;
-const OperationResponse = (msg) =>
-	Object({
-		result: k_EResult_Fail,
-		message: msg,
-	});
+const OperationResponse = (msg) => ({
+	result: k_EResult_Fail,
+	message: msg,
+});
 
 let pElements = null;
 let pChromeRemoteInterfaceHelper;

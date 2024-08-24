@@ -1,3 +1,12 @@
+import {
+	id,
+	sleep,
+	CLog,
+	CLogTime,
+	RenderProgress,
+	ResizeWindowForList,
+} from "../shared.js";
+
 const EMPDState = {
 	/** no information available */
 	Unknown: 0,
@@ -33,13 +42,13 @@ const EMPDSingleState = {
 class CPlayerList {
 	constructor() {
 		this.m_bRendered = false;
-		/** @type ILogger */
+		/** @type {import("../../../types/shared").ITimeLogger} */
 		this.m_pSearchLogger = new CLogTime("CPlayerList", "Search()");
-		/** @type ILogger */
+		/** @type {import("../../../types/shared").ITimeLogger} */
 		this.m_pRenderLogger = new CLogTime("CPlayerList", "Render()");
 		/** @type HTMLElement[] */
 		this.m_vecEntries = [];
-		/** @type IMPDSong[] */
+		/** @type {import("../../../types/mpd").IMPDSong[]} */
 		this.m_vecSongs = [];
 	}
 
@@ -146,11 +155,11 @@ class CPlayerList {
 
 class CPlayer {
 	constructor() {
-		/** @type ILogger */
+		/** @type {import("../../../types/shared").ILogger} */
 		this.m_pLogger = new CLog("CPlayer");
-		/** @type IMPDSong */
+		/** @type {import("../../../types/mpd").IMPDSong} */
 		this.m_pSong = null;
-		/** @type IMPDServerStatus */
+		/** @type {import("../../../types/mpd").IMPDServerStatus} */
 		this.m_pServerStatus = null;
 		this.m_strMusicDir = (() => {
 			const [vecFiles, pPattern] = electron.GetConfigAndPattern("mpd");

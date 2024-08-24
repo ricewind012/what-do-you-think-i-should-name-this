@@ -1,7 +1,7 @@
-const id = (s) => document.getElementById(s);
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+export const id = (s) => document.getElementById(s);
+export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-class CLog {
+export class CLog {
 	constructor(strName) {
 		this.m_strName = strName;
 	}
@@ -36,7 +36,7 @@ class CLog {
 	}
 }
 
-class CLogTime extends CLog {
+export class CLogTime extends CLog {
 	constructor(strName, strLabel) {
 		super(strName);
 
@@ -58,7 +58,7 @@ class CLogTime extends CLog {
 	}
 }
 
-function RenderList(elParent, fnCallback) {
+export function RenderList(elParent, fnCallback) {
 	const elEntry = pElements.elEntry.content.cloneNode(true);
 	const elEntryContainer = elEntry.children[0];
 
@@ -66,12 +66,12 @@ function RenderList(elParent, fnCallback) {
 	elParent.appendChild(elEntry);
 }
 
-function RenderProgress(elProgress, flProgressValue) {
+export function RenderProgress(elProgress, flProgressValue) {
 	elProgress.value = flProgressValue;
 	elProgress.style.setProperty("--value", `${flProgressValue * 100}%`);
 }
 
-async function ResizeWindowForList() {
+export async function ResizeWindowForList() {
 	const elList = pElements.elList;
 	const elListSearch = pElements.elListSearchContainer;
 	const bListHidden = elList.hidden && (elListSearch?.hidden ?? true);
@@ -82,12 +82,3 @@ async function ResizeWindowForList() {
 	elList.hidden = !bListHidden;
 	electron.Window.SetBounds(pBounds);
 }
-
-for (const e of Object.keys(electron)) {
-	window[e] = electron[e];
-}
-
-// TODO: GetWM
-setTimeout(() => {
-	electron.Window.SetIntendedBounds(location.href.match(/^.*\/(.*).html$/)[1]);
-}, 100);

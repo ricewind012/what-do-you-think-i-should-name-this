@@ -1,60 +1,4 @@
-// preload.js
-declare interface IProcess {
-	pid: number;
-	cmd: string;
-	args: string[];
-}
-
-declare var electron: {
-	MPD: IModuleMPD;
-	X11: IModuleX11;
-
-	/**
-	 * Finds the argument from command line arguments.
-	 *
-	 * @param args Command line arguments.
-	 * @param argToFind Argument to look up.
-	 */
-	GetCommandArguments(args: string[], argToFind: string): string;
-
-	/**
-	 * @param program
-	 */
-	GetConfigAndPattern(program: string): [string[], RegExp];
-
-	/**
-	 * Gets a list of processes.
-	 */
-	GetProcesses(): IProcess[];
-
-	/**
-	 * Parses an INI(-like) format file.
-	 *
-	 * No sections.
-	 *
-	 * The values will be strings regardless of their type (libconfig).
-	 *
-	 * @param files Files to look up for existing.
-	 * @param pattern The pattern to parse the file by.
-	 *
-	 * @throws See {@link fs.readFileSync}.
-	 */
-	ParseINI(files: string[], pattern: RegExp): any;
-};
-
-// shared.js
-declare interface ILogger {
-	Log(format: string, ...arguments: any): void;
-	Assert(assertion: boolean, format: string, ...arguments: any): void;
-}
-
-declare interface ITimeLogger extends ILogger {
-	TimeStart(): void;
-	TimeEnd(): void;
-}
-
-// mpd
-declare interface IMPDSong {
+export interface IMPDSong {
 	file: string;
 	format: {
 		unSampleRate: number;
@@ -79,7 +23,7 @@ declare interface IMPDSong {
 	};
 }
 
-declare interface IMPDServerStatus {
+export interface IMPDServerStatus {
 	bConsume: boolean;
 	bRandom: boolean;
 	bRepeat: boolean;
@@ -101,14 +45,14 @@ declare interface IMPDServerStatus {
 	unUpdateID: number;
 }
 
-declare interface IMPDServerSettings {
+export interface IMPDServerSettings {
 	strHost: string | null;
 	strPassword: string | null;
 	unPort: number;
 	unTimeout: number;
 }
 
-declare interface IModuleMPD {
+export interface IModuleMPD {
 	Controls: {
 		// no args
 		Next(): void;
@@ -150,23 +94,23 @@ declare interface IModuleMPD {
 	GetSettings(): IMPDServerSettings;
 }
 
-declare enum EMPDState {
+export enum EMPDState {
 	/** no information available */
-	UNKNOWN = 0,
+	UNKNOWN,
 
 	/** not playing */
-	STOP = 1,
+	STOP,
 
 	/** playing */
-	PLAY = 2,
+	PLAY,
 
 	/** playing, but paused */
-	PAUSE = 3,
+	PAUSE,
 }
 
-declare enum EMPDSingleState {
+export enum EMPDSingleState {
 	/** disabled */
-	OFF = 0,
+	OFF,
 
 	/** enabled */
 	ON,
@@ -180,9 +124,4 @@ declare enum EMPDSingleState {
 
 	/** Unknown state */
 	UNKNOWN,
-}
-
-// x11
-declare interface IModuleX11 {
-	GetScreenSize(): [number, number];
 }
