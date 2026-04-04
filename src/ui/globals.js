@@ -5,4 +5,4 @@ for (const e of Object.keys(electron)) {
 // TODO: GetWM
 setTimeout(() => {
 	electron.Window.SetIntendedBounds(location.href.match(/^.*\/(.*).html$/)[1]);
-}, 100);
+}, 1_000);

@@ -27,18 +27,18 @@ const k_vecWindowSizes = [
 		name: "procs",
 		bounds: {
 			x: unScreenWidth - 400,
-			y: 275,
+			y: 253,
 			width: 400,
-			height: 250,
+			height: 311,
 		},
 	},
 	{
 		name: "steam",
 		bounds: {
 			x: unScreenWidth - 400,
-			y: unScreenHeight - 140,
+			y: 0,
 			width: 400,
-			height: 600,
+			height: 228,
 		},
 	},
 ];

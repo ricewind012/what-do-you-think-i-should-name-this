@@ -1,3 +1,12 @@
+body {
+	padding-inline: var(--spacing);
+}
+
+h1 {
+	text-align: center;
+	margin: calc(var(--spacing) * 2) var(--spacing);
+}
+
 ul {
 	padding: var(--spacing);
 }

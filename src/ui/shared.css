@@ -15,10 +15,9 @@
 	--bg-2: color-mix(in srgb, var(--main-color) 50%, transparent);
 
 	--fg: var(--main-color);
-	--fg-2: color-mix(in srgb, var(--main-color) 75%, transparent);
+	--fg-2: color-mix(in srgb, var(--main-color) 50%, transparent);
 
 	--font-name: "MS Gothic";
-	--font-name: serif;
 	--font-size: 9pt;
 
 	--animation-time: 150ms;
@@ -233,6 +232,7 @@ li {
 	padding: calc(var(--spacing) / 2) var(--spacing);
 
 	display: flex;
+	align-items: center;
 
 	cursor: pointer;
 

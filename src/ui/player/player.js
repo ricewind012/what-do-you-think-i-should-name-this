@@ -240,7 +240,7 @@ class CPlayer {
 const k_strEmptyImage = "data:image/gif;base64,R0lGODlhAQABADs7Ozs=";
 const k_vecImageFormats = ["avif", "bmp", "jpg", "jpeg", "png"];
 
-let pElements = {};
+globalThis.pElements = {};
 const pList = new CPlayerList();
 const pPlayer = new CPlayer();
 
